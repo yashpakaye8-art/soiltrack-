@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>All Samples - SoilTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #F4F1EB; font-family: 'Segoe UI', sans-serif; }
+        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; }
+        .sidebar .logo { color: #fff; font-size: 20px; font-weight: 700; padding: 10px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px; }
+        .sidebar .logo span { font-size: 12px; display: block; font-weight: 400; opacity: 0.7; margin-top: 2px; }
+        .sidebar a { color: rgba(255,255,255,0.85); text-decoration: none; display: block; padding: 10px 20px; font-size: 14px; transition: all 0.15s; }
+        .sidebar a:hover { background-color: #3A6B4A; color: #fff; }
+        .sidebar a.active { background-color: #3A6B4A; color: #fff; font-weight: 600; }
+        .sidebar .nav-section { color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 15px 20px 5px; }
+        .sidebar-bottom { position: absolute; bottom: 0; width: 100%; border-top: 1px solid rgba(255,255,255,0.2); padding: 10px 0; }
+        .main-content { margin-left: 220px; padding: 30px; padding-bottom: 90px; }
+        .topbar { background: white; padding: 15px 30px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
+        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; }
+        .card { border: 1px solid #DDD9CF; border-radius: 12px; background: white; overflow: hidden; }
+        .badge-fertile { background-color: #E6F2EA; color: #2D5A3D; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-moderate { background-color: #FDF4E3; color: #7A5010; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-poor { background-color: #FCEAEA; color: #A83030; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-gov { background-color: #E8F0F9; color: #2A5080; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-pvt { background-color: #F3EEFF; color: #5A2D9E; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .sample-id { font-family: monospace; font-size: 12px; background: #F4F1EB; border: 1px solid #DDD9CF; border-radius: 4px; padding: 2px 8px; }
+        table { width: 100%; }
+        thead th { font-size: 11px; font-weight: 700; color: #9A9485; text-transform: uppercase; letter-spacing: 0.6px; padding: 10px 14px; border-bottom: 1px solid #DDD9CF; background: #FAFAF7; }
+        tbody td { padding: 10px 14px; border-bottom: 1px solid #F4F1EB; font-size: 13px; vertical-align: middle; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover td { background-color: #FAFAF7; }
+        tbody tr.row-selected td { background-color: #EEF5F0; }
+        .search-bar { padding: 16px 20px; border-bottom: 1px solid #DDD9CF; display: flex; gap: 10px; align-items: center; }
+        .search-bar input { border: 1px solid #DDD9CF; border-radius: 8px; padding: 7px 12px; font-size: 13px; outline: none; width: 250px; }
+        .search-bar input:focus { border-color: #4A7C59; }
+        .search-bar select { border: 1px solid #DDD9CF; border-radius: 8px; padding: 7px 12px; font-size: 13px; outline: none; }
+        .no-results { text-align: center; padding: 40px; color: #9A9485; font-size: 14px; }
+        .row-check, .head-check { width: 16px; height: 16px; cursor: pointer; accent-color: #4A7C59; }
+        .export-bar {
+            position: fixed; left: 220px; right: 0; bottom: 0;
+            background: #2D5A3D; color: white; padding: 14px 30px;
+            display: none; align-items: center; justify-content: space-between;
+            z-index: 50; box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
+        }
+        .export-bar.show { display: flex; }
+        .export-bar .count-text { font-size: 13.5px; font-weight: 600; }
+        .export-bar .count-text b { color: #A8D9B8; }
+        .btn-export-selected { background: #C4923A; color: white; border: none; border-radius: 8px; padding: 9px 20px; font-size: 13.5px; font-weight: 700; cursor: pointer; text-decoration: none; }
+        .btn-export-selected:hover { background: #A87520; color: white; }
+        .btn-clear-selection { background: transparent; color: rgba(255,255,255,0.7); border: 1.5px solid rgba(255,255,255,0.3); border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: 10px; }
+        .btn-clear-selection:hover { background: rgba(255,255,255,0.1); color: white; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="logo">🌱 SoilTrack<span>Chemistry Department</span></div>
+    <div class="nav-section">Main</div>
+    <a href="/">📊 Dashboard</a>
+    <a href="/samples" class="active">📋 All Samples</a>
+    <a href="/add">➕ Add Sample</a>
+    <a href="/lab-calculation">🧪 Lab Calculation</a>
+    <div class="nav-section">Settings</div>
+    <a href="/dilution-factors">⚗️ Dilution Factors</a>
+    <div class="nav-section">Export</div>
+    <a href="/export">⬇ Export All to Excel</a>
+    <div class="sidebar-bottom">
+        <div class="nav-section">Account</div>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+</div>
+
+<div class="topbar">
+    <div class="topbar-title">All Samples</div>
+    <div style="display:flex;gap:10px">
+        <a href="/export" class="btn btn-sm" style="background:white;color:#4A7C59;border:1px solid #4A7C59;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600">⬇ Export All</a>
+        <a href="/add" class="btn btn-sm" style="background:#4A7C59;color:white;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600">+ Add Sample</a>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="🔍 Search by ID, village, farmer..." onkeyup="filterTable()">
+            <select id="categoryFilter" onchange="filterTable()">
+                <option value="">All Categories</option>
+                <option value="Fertile">Fertile</option>
+                <option value="Moderate">Moderate</option>
+                <option value="Poor">Poor</option>
+            </select>
+            <select id="typeFilter" onchange="filterTable()">
+                <option value="">All Types</option>
+                <option value="Government">Government</option>
+                <option value="Private">Private</option>
+            </select>
+        </div>
+        <div style="overflow-x:auto">
+            <table id="samplesTable">
+                <thead>
+                    <tr>
+                        <th style="width:34px;"><input type="checkbox" class="head-check" id="selectAll" onclick="toggleAll()"></th>
+                        <th>Sample ID</th>
+                        <th>Village</th>
+                        <th>Type</th>
+                        <th>Farmer</th>
+                        <th>Year</th>
+                        <th>pH</th>
+                        <th>N</th>
+                        <th>P</th>
+                        <th>K</th>
+                        <th>Category</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sample in samples %}
+                    <tr data-type="{{ sample.sample_type }}" data-category="{{ sample.category }}">
+                        <td><input type="checkbox" class="row-check" value="{{ sample.id }}" onclick="updateSelection()"></td>
+                        <td><span class="sample-id">{{ sample.sample_id }}</span></td>
+                        <td>{{ sample.village }}</td>
+                        <td>
+                            {% if sample.sample_type == 'Government' %}
+                                <span class="badge-gov">Govt</span>
+                            {% else %}
+                                <span class="badge-pvt">Pvt</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ sample.farmer_name }}</td>
+                        <td>{{ sample.collection_date }}</td>
+                        <td>{{ sample.ph }}</td>
+                        <td>{{ sample.nitrogen }}</td>
+                        <td>{{ sample.phosphorus }}</td>
+                        <td>{{ sample.potassium }}</td>
+                        <td>
+                            {% if sample.category == 'Fertile' %}
+                                <span class="badge-fertile">● Fertile</span>
+                            {% elif sample.category == 'Moderate' %}
+                                <span class="badge-moderate">● Moderate</span>
+                            {% else %}
+                                <span class="badge-poor">● Poor</span>
+                            {% endif %}
+                        </td>
+                        <td><a href="/sample/{{ sample.id }}" style="color:#4A7C59;font-weight:600;font-size:13px;text-decoration:none">View →</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div id="no-results" class="no-results" style="display:none">No samples found matching your search! 🔍</div>
+        </div>
+    </div>
+</div>
+
+<div class="export-bar" id="exportBar">
+    <div class="count-text"><b id="selectedCount">0</b> sample(s) selected</div>
+    <div>
+        <button class="btn-clear-selection" onclick="clearSelection()">Clear</button>
+        <a href="#" id="exportSelectedBtn" class="btn-export-selected">⬇ Export Selected to Excel</a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function filterTable() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const category = document.getElementById('categoryFilter').value;
+    const type = document.getElementById('typeFilter').value;
+    const rows = document.querySelectorAll('#samplesTable tbody tr');
+    let visibleCount = 0;
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        const rowType = row.getAttribute('data-type');
+        const rowCategory = row.getAttribute('data-category');
+        const matchSearch = search === '' || text.includes(search);
+        const matchCategory = category === '' || rowCategory === category;
+        const matchType = type === '' || rowType === type;
+        if (matchSearch && matchCategory && matchType) { row.style.display = ''; visibleCount++; }
+        else { row.style.display = 'none'; }
+    });
+    document.getElementById('no-results').style.display = visibleCount === 0 ? 'block' : 'none';
+}
+function updateSelection() {
+    const checks = document.querySelectorAll('.row-check');
+    const checked = document.querySelectorAll('.row-check:checked');
+    const exportBar = document.getElementById('exportBar');
+    checks.forEach(c => { c.closest('tr').classList.toggle('row-selected', c.checked); });
+    document.getElementById('selectedCount').textContent = checked.length;
+    if (checked.length > 0) {
+        exportBar.classList.add('show');
+        const ids = Array.from(checked).map(c => c.value).join(',');
+        document.getElementById('exportSelectedBtn').href = `/export-selected?ids=${ids}`;
+    } else { exportBar.classList.remove('show'); }
+    document.getElementById('selectAll').checked = checks.length > 0 && checked.length === checks.length;
+}
+function toggleAll() {
+    const selectAll = document.getElementById('selectAll').checked;
+    document.querySelectorAll('.row-check').forEach(c => {
+        if (c.closest('tr').style.display !== 'none') c.checked = selectAll;
+    });
+    updateSelection();
+}
+function clearSelection() {
+    document.querySelectorAll('.row-check').forEach(c => c.checked = false);
+    document.getElementById('selectAll').checked = false;
+    updateSelection();
+}
+</script>
+</body>
+</html>

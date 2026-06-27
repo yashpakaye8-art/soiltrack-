@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lab Calculation - SoilTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #F4F1EB; font-family: 'Segoe UI', sans-serif; }
+        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; }
+        .sidebar .logo { color: #fff; font-size: 20px; font-weight: 700; padding: 10px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px; }
+        .sidebar .logo span { font-size: 12px; display: block; font-weight: 400; opacity: 0.7; margin-top: 2px; }
+        .sidebar a { color: rgba(255,255,255,0.85); text-decoration: none; display: block; padding: 10px 20px; font-size: 14px; transition: all 0.15s; }
+        .sidebar a:hover { background-color: #3A6B4A; color: #fff; }
+        .sidebar a.active { background-color: #3A6B4A; color: #fff; font-weight: 600; }
+        .sidebar .nav-section { color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 15px 20px 5px; }
+        .sidebar-bottom { position: absolute; bottom: 0; width: 100%; border-top: 1px solid rgba(255,255,255,0.2); padding: 10px 0; }
+        .topbar { background: white; padding: 15px 30px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
+        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; }
+        .main-content { margin-left: 220px; padding: 30px; }
+        .card { border: 1px solid #DDD9CF; border-radius: 12px; background: white; }
+        .steps-wrap { background: white; border: 1px solid #DDD9CF; border-radius: 12px; padding: 20px 28px; margin-bottom: 20px; overflow-x: auto; }
+        .steps-track { display: flex; align-items: flex-start; min-width: 560px; }
+        .step-item { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; cursor: pointer; }
+        .step-item:not(:last-child)::after { content: ''; position: absolute; top: 16px; left: 50%; width: 100%; height: 2px; background: #DDD9CF; z-index: 0; }
+        .step-item.done:not(:last-child)::after { background: #4A7C59; }
+        .step-circle { width: 32px; height: 32px; border-radius: 50%; background: #DDD9CF; color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; z-index: 1; position: relative; font-family: monospace; transition: all 0.2s; }
+        .step-item.done .step-circle { background: #4A7C59; }
+        .step-item.active .step-circle { background: #3A6B4A; box-shadow: 0 0 0 4px rgba(74,124,89,0.2); transform: scale(1.1); }
+        .step-label { font-size: 10px; color: #9A9485; margin-top: 6px; text-align: center; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+        .step-item.active .step-label { color: #4A7C59; }
+        .step-item.done .step-label { color: #3A6B4A; }
+        .wizard-header { background: #4A7C59; border-radius: 12px 12px 0 0; padding: 16px 24px; }
+        .wizard-header .step-badge { background: rgba(255,255,255,0.15); color: white; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 4px; letter-spacing: 0.5px; display: inline-block; margin-bottom: 4px; }
+        .wizard-header h5 { color: white; font-weight: 700; margin: 0; font-size: 16px; }
+        .wizard-header p { color: rgba(255,255,255,0.65); font-size: 12px; margin: 2px 0 0; }
+        .form-label { font-size: 11px; font-weight: 700; color: #9A9485; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+        .form-label .lbl-sub { font-size: 10px; color: #BDB8AF; font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 3px; }
+        .form-control, .form-select { border: 1.5px solid #DDD9CF; border-radius: 8px; font-size: 14px; padding: 9px 12px; background: white; color: #1A1814; }
+        .form-control:focus, .form-select:focus { border-color: #4A7C59; box-shadow: 0 0 0 3px rgba(74,124,89,0.12); }
+        .calc-field { background: #EEF5F0 !important; color: #2D5A3D !important; font-weight: 700; font-family: monospace; border-color: #C8DDD0 !important; }
+        .calc-field:focus { border-color: #4A7C59 !important; }
+        .sec-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0 14px; }
+        .sec-divider span { font-size: 11px; font-weight: 700; color: #4A7C59; text-transform: uppercase; letter-spacing: 0.8px; white-space: nowrap; }
+        .sec-divider::after { content: ''; flex: 1; height: 1.5px; background: #DDD9CF; }
+        .info-box { background: #EEF5F0; border: 1px solid #C8DDD0; border-left: 4px solid #4A7C59; border-radius: 8px; padding: 10px 14px; margin-bottom: 18px; font-size: 12.5px; color: #2D5A3D; line-height: 1.6; }
+        .info-box code { background: white; border: 1px solid #C8DDD0; border-radius: 4px; padding: 1px 6px; font-size: 11.5px; color: #2D5A3D; }
+        .lookup-status { font-size: 12.5px; padding: 7px 12px; border-radius: 7px; margin-top: 6px; display: none; }
+        .lookup-ok  { background: #EEF5F0; color: #2D5A3D; border: 1px solid #C8DDD0; display: block; }
+        .lookup-err { background: #FCEAEA; color: #A83030; border: 1px solid #F0C8C8; display: block; }
+        .autofill-notice { background: #FDF4E3; border: 1px solid #E8D4A0; border-radius: 8px; padding: 9px 14px; display: none; align-items: center; gap: 10px; margin-bottom: 16px; }
+        .autofill-notice .badge-edit { background: #C4923A; color: white; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+        .autofill-notice span { font-size: 12.5px; color: #7A5010; }
+        .edit-mode-badge { display: none; background: #FDF4E3; border: 1.5px solid #C4923A; color: #7A5010; border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 700; }
+        .result-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+        .result-item { background: #EEF5F0; border: 1px solid #C8DDD0; border-radius: 10px; padding: 12px 14px; text-align: center; }
+        .result-item .r-label { font-size: 10px; font-weight: 700; color: #9A9485; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .result-item .r-value { font-size: 18px; font-weight: 700; font-family: monospace; color: #2D5A3D; }
+        .result-item .r-unit  { font-size: 10.5px; color: #9A9485; margin-top: 1px; }
+        .category-banner { border-radius: 10px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+        .cat-fertile  { background: #EEF5F0; border: 2px solid #4A7C59; }
+        .cat-moderate { background: #FDF4E3; border: 2px solid #C4923A; }
+        .cat-poor     { background: #FCEAEA; border: 2px solid #B84A4A; }
+        .cat-icon { font-size: 30px; }
+        .cat-title { font-size: 17px; font-weight: 700; color: #1A1814; }
+        .cat-desc  { font-size: 12.5px; color: #9A9485; margin-top: 2px; }
+        .wizard-footer { padding: 16px 24px; border-top: 1px solid #DDD9CF; background: #FAFAF7; border-radius: 0 0 12px 12px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-green  { background: #4A7C59; color: white; border: none; border-radius: 8px; padding: 9px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+        .btn-green:hover  { background: #3A6B4A; color: white; }
+        .btn-outline-green { background: transparent; color: #4A7C59; border: 1.5px solid #4A7C59; border-radius: 8px; padding: 8px 18px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+        .btn-outline-green:hover { background: #EEF5F0; }
+        .btn-gold { background: #C4923A; color: white; border: none; border-radius: 8px; padding: 9px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .btn-gold:hover { background: #A87520; }
+        .btn-muted { background: transparent; color: #9A9485; border: 1.5px solid #DDD9CF; border-radius: 8px; padding: 8px 18px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .btn-muted:hover { background: #F4F1EB; }
+        button:disabled { opacity: 0.45; cursor: not-allowed; }
+        .step-panel { display: none; }
+        .step-panel.active { display: block; animation: fadeUp 0.2s ease; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .toast-msg { position: fixed; bottom: 24px; right: 24px; background: #2D5A3D; color: white; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 500; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 9999; transform: translateY(60px); opacity: 0; transition: all 0.3s; }
+        .toast-msg.show { transform: translateY(0); opacity: 1; }
+        .ec-hint { font-size: 11px; color: #9A9485; margin-top: 3px; font-family: monospace; }
+
+        /* ── Year/Date toggle ── */
+        .toggle-btn { font-size: 11px; font-weight: 600; padding: 4px 11px; border-radius: 6px; border: 1.5px solid #DDD9CF; background: white; color: #9A9485; cursor: pointer; transition: all 0.15s; }
+        .toggle-btn.active { background: #4A7C59; color: white; border-color: #4A7C59; }
+
+        @media print {
+            .sidebar, .topbar, .wizard-footer, .steps-wrap { display: none !important; }
+            .main-content { margin-left: 0; padding: 0; }
+            .step-panel { display: none !important; }
+            .step-panel.active { display: block !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="logo">🌱 SoilTrack<span>Chemistry Department</span></div>
+    <div class="nav-section">Main</div>
+    <a href="/">📊 Dashboard</a>
+    <a href="/samples">📋 All Samples</a>
+    <a href="/add">➕ Add Sample</a>
+    <a href="/lab-calculation" class="active">🧪 Lab Calculation</a>
+    <div class="nav-section">Settings</div>
+    <a href="/dilution-factors">⚗️ Dilution Factors</a>
+    <div class="nav-section">Export</div>
+    <a href="/export">⬇ Export to Excel</a>
+    <div class="sidebar-bottom">
+        <div class="nav-section">Account</div>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+</div>
+
+<div class="topbar">
+    <div class="topbar-title">🧪 Lab Calculation Wizard</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+        <div class="edit-mode-badge" id="edit-mode-badge">✏️ EDIT MODE — updating existing sample</div>
+        <a href="/samples" class="btn-muted" style="text-decoration:none;">← Back to Samples</a>
+    </div>
+</div>
+
+<div class="main-content">
+
+    <!-- Step Progress -->
+    <div class="steps-wrap">
+        <div class="steps-track">
+            <div class="step-item active" data-step="1"><div class="step-circle">1</div><div class="step-label">Sample Info</div></div>
+            <div class="step-item" data-step="2"><div class="step-circle">2</div><div class="step-label">pH + EC</div></div>
+            <div class="step-item" data-step="3"><div class="step-circle">3</div><div class="step-label">Nitrogen</div></div>
+            <div class="step-item" data-step="4"><div class="step-circle">4</div><div class="step-label">P + K</div></div>
+            <div class="step-item" data-step="5"><div class="step-circle">5</div><div class="step-label">OC + B + S</div></div>
+            <div class="step-item" data-step="6"><div class="step-circle">6</div><div class="step-label">AAS Metals</div></div>
+            <div class="step-item" data-step="7"><div class="step-circle">✓</div><div class="step-label">Review & Save</div></div>
+        </div>
+    </div>
+
+    <div class="card">
+
+        <!-- ══ STEP 1 ══ -->
+        <div id="panel-1" class="step-panel active">
+            <div class="wizard-header">
+                <div class="step-badge">STEP 1 / 7</div>
+                <h5>Sample Information</h5>
+                <p>Enter Sample ID to auto-fill all data, or fill in manually for a new sample</p>
+            </div>
+            <div class="p-4">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Sample ID <span class="lbl-sub">(enter existing ID to load & edit)</span></label>
+                        <div class="d-flex gap-2">
+                            <input type="text" class="form-control" id="sample_id" placeholder="e.g. JAM01" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter') lookupSample()">
+                            <button class="btn-green px-3" onclick="lookupSample()" style="white-space:nowrap;">🔍 Lookup</button>
+                        </div>
+                        <div id="lookup-status" class="lookup-status"></div>
+                    </div>
+                </div>
+
+                <div class="autofill-notice" id="autofill-notice">
+                    <span class="badge-edit">✏️ Edit Mode</span>
+                    <span>All readings loaded from database. Edit any value and save to update.</span>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Farmer Name</label>
+                        <input type="text" class="form-control" id="farmer_name" placeholder="e.g. Ramesh Patil">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Village</label>
+                        <input type="text" class="form-control" id="village" placeholder="e.g. Jambhulwadi">
+                    </div>
+                    <input type="hidden" id="sample_type" value="Soil">
+
+                    <!-- ── Collection Year / Date with toggle ── -->
+                    <div class="col-md-4">
+                        <label class="form-label">Collection Year / Date</label>
+                        <div style="display:flex;gap:6px;margin-bottom:7px;">
+                            <button type="button" class="toggle-btn active" id="wiz-btn-year" onclick="wizSwitchMode('year')">📅 Year Range</button>
+                            <button type="button" class="toggle-btn" id="wiz-btn-date" onclick="wizSwitchMode('date')">🗓 Exact Date</button>
+                        </div>
+                        <!-- Year text input (default) -->
+                        <input type="text" class="form-control" id="collection_date" placeholder="e.g. 2025-2026" maxlength="9" oninput="wizFormatYear(this)">
+                        <!-- Exact date picker (hidden by default) -->
+                        <input type="date" class="form-control" id="collection_date_exact" style="display:none;">
+                        <div style="font-size:11px;color:#9A9485;margin-top:3px;" id="wiz-date-hint">Enter year range like 2025-2026</div>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Temp <span class="lbl-sub">(°C)</span></label>
+                        <input type="number" class="form-control" id="temperature" placeholder="28" step="0.1">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Moisture <span class="lbl-sub">(%)</span></label>
+                        <input type="number" class="form-control" id="moisture" placeholder="14" step="0.1">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ STEP 2 ══ -->
+        <div id="panel-2" class="step-panel">
+            <div class="wizard-header">
+                <div class="step-badge">STEP 2 / 7</div>
+                <h5>pH &amp; Electrical Conductivity (EC)</h5>
+                <p>EC is auto-calculated using temperature compensation table</p>
+            </div>
+            <div class="p-4">
+                <div class="info-box"><strong>Formula:</strong> EC = Observed EC × Temperature Compensation Factor &nbsp;|&nbsp; Reference temp: 25°C</div>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">pH Value</label>
+                        <input type="number" class="form-control" id="ph" placeholder="e.g. 7.2" step="0.01" min="0" max="14">
+                    </div>
+                    <div class="col-12"><div class="sec-divider"><span>⚡ EC Reading</span></div></div>
+                    <div class="col-md-4">
+                        <label class="form-label">Observed EC <span class="lbl-sub">(dS/m)</span></label>
+                        <input type="number" class="form-control" id="observed_ec" placeholder="e.g. 0.45" step="0.001" oninput="calcEC()">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Temperature at Reading <span class="lbl-sub">(°C)</span></label>
+                        <input type="number" class="form-control" id="ec_temperature" placeholder="e.g. 28" step="0.5" oninput="calcEC()">
+                        <div class="ec-hint" id="comp-factor-display">Compensation factor: —</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Calculated EC <span class="lbl-sub">(auto)</span></label>
+                        <input type="text" class="form-control calc-field" id="ec" readonly placeholder="Auto-calculated…">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ STEP 3 ══ -->
+        <div id="panel-3" class="step-panel">
+            <div class="wizard-header">
+                <div class="step-badge">STEP 3 / 7</div>
+                <h5>Nitrogen (Kjeldahl Method)</h5>
+                <p>Enter burette readings A and B</p>
+            </div>
+            <div class="p-4">
+                <div class="info-box"><strong>Formula:</strong> Nitrogen = (Burette A − Burette B) × 209.07 &nbsp;<code>kg/ha</code></div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Burette Reading A <span class="lbl-sub">(ml)</span></label>
+                        <input type="number" class="form-control" id="n_burette_a" placeholder="e.g. 12.5" step="0.01" oninput="calcNitrogen()">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Burette Reading B <span class="lbl-sub">(ml)</span></label>
+                        <input type="number" class="form-control" id="n_burette_b" placeholder="e.g. 8.2" step="0.01" oninput="calcNitrogen()">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Calculated Nitrogen <span class="lbl-sub">(auto)</span></label>
+                        <input type="text" class="form-control calc-field" id="nitrogen" readonly placeholder="Auto-calculated…">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ STEP 4 ══ -->
+        <div id="panel-4" class="step-panel">
+            <div class="wizard-header">
+                <div class="step-badge">STEP 4 / 7</div>
+                <h5>Phosphorus &amp; Potassium</h5>
+                <p>Absorbance &amp; flame photometer readings</p>
+            </div>
+            <div class="p-4">
+                <div class="info-box">
+                    <strong>Phosphorus:</strong> Absorbance × Factor (default 41.65) <code>kg/ha</code> &nbsp;|&nbsp;
+                    <strong>Potassium:</strong> Flame reading × Factor (default 11.2) <code>kg/ha</code>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12"><div class="sec-divider"><span>🔬 Phosphorus</span></div></div>
+                    <div class="col-md-6">
+                        <label class="form-label">Absorbance (P)</label>
+                        <input type="number" class="form-control" id="abs_phosphorus" placeholder="e.g. 0.285" step="0.0001" oninput="calcAbs('phosphorus')">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Calculated Phosphorus <span class="lbl-sub">(auto)</span></label>
+                        <input type="text" class="form-control calc-field" id="phosphorus" readonly placeholder="Auto-calculated…">
+                    </div>
+                    <div class="col-12"><div class="sec-divider"><span>🔥 Potassium</span></div></div>
+                    <div class="col-md-6">
+                        <label class="form-label">Flame Photometer Reading (K)</label>
+                        <input type="number" class="form-control" id="abs_potassium" placeholder="e.g. 9.5" step="0.001" oninput="calcAbs('potassium')">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Calculated Potassium <span class="lbl-sub">(auto)</span></label>
+                        <input type="text" class="form-control calc-field" id="potassium" readonly placeholder="Auto-calculated…">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ STEP 5 ══ -->
+        <div id="panel-5" class="step-panel">
+            <div class="wizard-header">
+                <div class="step-badge">STEP 5 / 7</div>
+                <h5>Organic Carbon, Boron &amp; Sulphur</h5>
+                <p>Colorimetric absorbance readings</p>
+            </div>
+            <div class="p-4">
+                <div class="row g-3">
+                    <div class="col-12"><div class="sec-divider"><span>🌿 Organic Carbon</span></div></div>
+                    <div class="col-md-6">
+                        <label class="form-label">Absorbance (OC)</label>
+                        <input type="number" class="form-control" id="abs_organic_carbon" placeholder="e.g. 0.412" step="0.0001" oninput="calcAbs('organic_carbon')">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Calculated OC <span class="lbl-sub">(%)</span></label>
+                        <input type="text" class="form-control calc-field" id="organic_carbon" readonly placeholder="Auto-calculated…">
+                    </div>
+                    <div class="col-12"><div class="sec-divider"><span>🟡 Boron</span></div></div>
+                    <div class="col-md-6">
+                        <label class="form-label">Absorbance (B)</label>
+                        <input type="number" class="form-control" id="abs_boron" placeholder="e.g. 0.075" step="0.0001" oninput="calcAbs('boron')">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Calculated Boron <span class="lbl-sub">(ppm)</span></label>
+                        <input type="text" class="form-control calc-field" id="boron" readonly placeholder="Auto-calculated…">
+                    </div>
+                    <div class="col-12"><div class="sec-divider"><span>🔶 Sulphur</span></div></div>
+                    <div class="col-md-6">
+                        <label class="form-label">Absorbance (S)</label>
+                        <input type="number" class="form-control" id="abs_sulphur" placeholder="e.g. 0.003" step="0.00001" oninput="calcAbs('sulphur')">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Calculated Sulphur <span class="lbl-sub">(ppm)</span></label>
+                        <input type="text" class="form-control calc-field" id="sulphur" readonly placeholder="Auto-calculated…">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ STEP 6 ══ -->
+        <div id="panel-6" class="step-panel">
+            <div class="wizard-header">
+                <div class="step-badge">STEP 6 / 7</div>
+                <h5>Micronutrients — AAS Readings</h5>
+                <p>Atomic Absorption Spectroscopy: Zinc, Iron, Manganese, Copper</p>
+            </div>
+            <div class="p-4">
+                <div class="row g-3">
+                    <div class="col-12"><div class="sec-divider"><span>🔵 Zinc &amp; Iron</span></div></div>
+                    <div class="col-md-3"><label class="form-label">Absorbance (Zn)</label><input type="number" class="form-control" id="abs_zinc" placeholder="e.g. 0.052" step="0.0001" oninput="calcAbs('zinc')"></div>
+                    <div class="col-md-3"><label class="form-label">Calculated Zinc <span class="lbl-sub">(ppm)</span></label><input type="text" class="form-control calc-field" id="zinc" readonly placeholder="Auto…"></div>
+                    <div class="col-md-3"><label class="form-label">Absorbance (Fe)</label><input type="number" class="form-control" id="abs_iron" placeholder="e.g. 0.108" step="0.0001" oninput="calcAbs('iron')"></div>
+                    <div class="col-md-3"><label class="form-label">Calculated Iron <span class="lbl-sub">(ppm)</span></label><input type="text" class="form-control calc-field" id="iron" readonly placeholder="Auto…"></div>
+                    <div class="col-12"><div class="sec-divider"><span>🟣 Manganese &amp; Copper</span></div></div>
+                    <div class="col-md-3"><label class="form-label">Absorbance (Mn)</label><input type="number" class="form-control" id="abs_manganese" placeholder="e.g. 0.067" step="0.0001" oninput="calcAbs('manganese')"></div>
+                    <div class="col-md-3"><label class="form-label">Calculated Manganese <span class="lbl-sub">(ppm)</span></label><input type="text" class="form-control calc-field" id="manganese" readonly placeholder="Auto…"></div>
+                    <div class="col-md-3"><label class="form-label">Absorbance (Cu)</label><input type="number" class="form-control" id="abs_copper" placeholder="e.g. 0.029" step="0.0001" oninput="calcAbs('copper')"></div>
+                    <div class="col-md-3"><label class="form-label">Calculated Copper <span class="lbl-sub">(ppm)</span></label><input type="text" class="form-control calc-field" id="copper" readonly placeholder="Auto…"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ STEP 7 ══ -->
+        <div id="panel-7" class="step-panel">
+            <div class="wizard-header">
+                <div class="step-badge">STEP 7 / 7</div>
+                <h5>Review &amp; Save</h5>
+                <p>Confirm all calculated values before saving to database</p>
+            </div>
+            <div class="p-4">
+                <div id="category-banner" class="category-banner cat-moderate">
+                    <div class="cat-icon">🌾</div>
+                    <div>
+                        <div class="cat-title" id="cat-title">Calculating…</div>
+                        <div class="cat-desc" id="cat-desc">Based on pH, Nitrogen, Phosphorus, Potassium</div>
+                    </div>
+                </div>
+                <div class="result-grid" id="result-grid"></div>
+                <div class="row g-3 mt-1">
+                    <div class="col-12">
+                        <label class="form-label">Notes <span class="lbl-sub">(optional)</span></label>
+                        <input type="text" class="form-control" id="notes" placeholder="Any additional observations…">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ FOOTER ══ -->
+        <div class="wizard-footer">
+            <button class="btn-muted" id="btn-prev" onclick="prevStep()" disabled>← Previous</button>
+            <div class="d-flex align-items-center gap-2">
+                <span id="step-counter" style="font-size:12px;color:#9A9485;font-family:monospace;">Step 1 of 7</span>
+                <button class="btn-green" id="btn-next" onclick="nextStep()">Next Step →</button>
+                <button class="btn-gold" id="btn-save" onclick="saveSample()" style="display:none;">💾 Save to Database</button>
+                <button class="btn-outline-green" id="btn-print" onclick="window.print()" style="display:none;">🖨 Print</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="toast-msg" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let currentStep = 1;
+const TOTAL = 7;
+let factors = {};
+let isUpdate = false;
+let wizMode = 'year'; // 'year' or 'date'
+
+const EC_TABLE = {
+    3:1.709,4:1.660,5:1.613,6:1.569,7:1.528,8:1.488,9:1.448,
+    10:1.411,11:1.375,12:1.341,13:1.309,14:1.277,15:1.247,
+    16:1.218,17:1.189,18:1.163,19:1.136,20:1.112,21:1.087,
+    22:1.064,23:1.043,24:1.020,25:1.000,26:0.979,27:0.960,
+    28:0.943,29:0.925,30:0.907,31:0.890,32:0.873,33:0.858,
+    34:0.843,35:0.829,36:0.815,37:0.801,38:0.788,39:0.775,40:0.763
+};
+function getCompFactor(t) {
+    const keys = Object.keys(EC_TABLE).map(Number);
+    return EC_TABLE[keys.reduce((a,b) => Math.abs(b-t) < Math.abs(a-t) ? b : a)];
+}
+
+async function loadFactors() {
+    try {
+        const r = await fetch('/api/factors');
+        factors = await r.json();
+    } catch(e) {
+        factors = { phosphorus:41.65, potassium:11.2, organic_carbon:2.78, boron:5.36, sulphur:541.0, zinc:18.8, iron:72.6, manganese:39.87, copper:32.98 };
+    }
+}
+loadFactors();
+
+// ── Year/Date toggle for wizard ──
+function wizSwitchMode(mode) {
+    wizMode = mode;
+    const yearInput = document.getElementById('collection_date');
+    const dateInput = document.getElementById('collection_date_exact');
+    const hint = document.getElementById('wiz-date-hint');
+
+    document.getElementById('wiz-btn-year').classList.toggle('active', mode === 'year');
+    document.getElementById('wiz-btn-date').classList.toggle('active', mode === 'date');
+
+    if (mode === 'year') {
+        yearInput.style.display = '';
+        dateInput.style.display = 'none';
+        hint.textContent = 'Enter year range like 2025-2026';
+    } else {
+        yearInput.style.display = 'none';
+        dateInput.style.display = '';
+        hint.textContent = 'Select exact collection date';
+    }
+}
+
+function wizFormatYear(input) {
+    let val = input.value.replace(/[^0-9\-]/g, '');
+    if (val.length === 4 && !val.includes('-')) val = val + '-';
+    input.value = val;
+}
+
+// Returns the active collection date value regardless of mode
+function getCollectionDate() {
+    if (wizMode === 'year') {
+        return document.getElementById('collection_date').value || null;
+    } else {
+        return document.getElementById('collection_date_exact').value || null;
+    }
+}
+
+function setVal(id, val) {
+    const el = document.getElementById(id);
+    if (el && val !== null && val !== undefined && val !== '') {
+        el.value = val;
+        el.style.transition = 'background 0.5s';
+        el.style.background = '#fffbe6';
+        setTimeout(() => { el.style.background = ''; }, 1500);
+    }
+}
+
+async function lookupSample() {
+    const sid = document.getElementById('sample_id').value.trim();
+    const statusEl = document.getElementById('lookup-status');
+    const noticeEl = document.getElementById('autofill-notice');
+    if (!sid) { statusEl.className = 'lookup-status lookup-err'; statusEl.textContent = '⚠ Please enter a Sample ID first.'; return; }
+    statusEl.className = 'lookup-status lookup-ok';
+    statusEl.textContent = '🔍 Searching…';
+    try {
+        const r = await fetch(`/api/sample-by-id/${sid}`);
+        const d = await r.json();
+        if (d.found) {
+            setVal('farmer_name', d.farmer_name);
+            setVal('village', d.village);
+            setVal('sample_type', d.sample_type);
+            setVal('temperature', d.temperature);
+            setVal('moisture', d.moisture);
+
+            // Smart fill collection_date — detect if it's a year range or exact date
+            if (d.collection_date) {
+                if (d.collection_date.includes('-') && d.collection_date.length <= 9) {
+                    // Year range like 2025-2026
+                    wizSwitchMode('year');
+                    setVal('collection_date', d.collection_date);
+                } else {
+                    // Exact date
+                    wizSwitchMode('date');
+                    setVal('collection_date_exact', d.collection_date);
+                }
+            }
+
+            setVal('ph', d.ph);
+            setVal('observed_ec', d.observed_ec);
+            setVal('ec_temperature', d.ec_temperature);
+            setVal('ec', d.ec);
+            if (d.ec_temperature) {
+                const cf = getCompFactor(parseFloat(d.ec_temperature));
+                document.getElementById('comp-factor-display').textContent = `Compensation factor: ${cf} (at ${d.ec_temperature}°C)`;
+            }
+            setVal('n_burette_a', d.n_burette_a);
+            setVal('n_burette_b', d.n_burette_b);
+            setVal('nitrogen', d.nitrogen);
+            setVal('abs_phosphorus', d.abs_phosphorus);
+            setVal('phosphorus', d.phosphorus);
+            setVal('abs_potassium', d.abs_potassium);
+            setVal('potassium', d.potassium);
+            setVal('abs_organic_carbon', d.abs_organic_carbon);
+            setVal('organic_carbon', d.organic_carbon);
+            setVal('abs_boron', d.abs_boron);
+            setVal('boron', d.boron);
+            setVal('abs_sulphur', d.abs_sulphur);
+            setVal('sulphur', d.sulphur);
+            setVal('abs_zinc', d.abs_zinc);
+            setVal('zinc', d.zinc);
+            setVal('abs_iron', d.abs_iron);
+            setVal('iron', d.iron);
+            setVal('abs_manganese', d.abs_manganese);
+            setVal('manganese', d.manganese);
+            setVal('abs_copper', d.abs_copper);
+            setVal('copper', d.copper);
+            setVal('notes', d.notes);
+
+            statusEl.className = 'lookup-status lookup-ok';
+            statusEl.textContent = `✅ Loaded: ${d.farmer_name || '—'} · ${d.village || '—'} · All readings filled in Steps 2–6`;
+            noticeEl.style.display = 'flex';
+            document.getElementById('edit-mode-badge').style.display = 'block';
+            isUpdate = true;
+        } else {
+            statusEl.className = 'lookup-status lookup-err';
+            statusEl.textContent = '❌ Sample ID not found — a new sample will be created.';
+            noticeEl.style.display = 'none';
+            document.getElementById('edit-mode-badge').style.display = 'none';
+            isUpdate = false;
+        }
+    } catch(e) {
+        statusEl.className = 'lookup-status lookup-err';
+        statusEl.textContent = '⚠ Server error. Is Flask running?';
+    }
+}
+
+function calcEC() {
+    const obs  = parseFloat(document.getElementById('observed_ec').value);
+    const temp = parseFloat(document.getElementById('ec_temperature').value);
+    if (!isNaN(obs) && !isNaN(temp)) {
+        const cf = getCompFactor(temp);
+        document.getElementById('ec').value = (obs * cf).toFixed(4);
+        document.getElementById('comp-factor-display').textContent = `Compensation factor: ${cf} (at ${temp}°C)`;
+    }
+}
+function calcNitrogen() {
+    const a = parseFloat(document.getElementById('n_burette_a').value);
+    const b = parseFloat(document.getElementById('n_burette_b').value);
+    if (!isNaN(a) && !isNaN(b)) document.getElementById('nitrogen').value = ((a - b) * 209.07).toFixed(2);
+}
+function calcAbs(param) {
+    const idMap = { organic_carbon:'abs_organic_carbon', potassium:'abs_potassium', phosphorus:'abs_phosphorus' };
+    const absId = idMap[param] || `abs_${param}`;
+    const val = parseFloat(document.getElementById(absId).value);
+    const f   = factors[param] || 1;
+    if (!isNaN(val)) document.getElementById(param).value = (val * f).toFixed(4);
+}
+
+function getCategory(ph, n, p, k) {
+    let score = 0, total = 0;
+    if (ph) { total++; if (ph >= 6.5 && ph <= 7.5) score++; }
+    if (n)  { total++; if (n  >= 280) score++; }
+    if (p)  { total++; if (p  >= 11)  score++; }
+    if (k)  { total++; if (k  >= 110) score++; }
+    if (!total) return 'Poor';
+    const r = score / total;
+    return r >= 0.75 ? 'Fertile' : r >= 0.5 ? 'Moderate' : 'Poor';
+}
+
+function buildSummary() {
+    const items = [
+        { label:'pH', id:'ph', unit:'' }, { label:'EC', id:'ec', unit:'dS/m' },
+        { label:'Nitrogen', id:'nitrogen', unit:'kg/ha' }, { label:'Phosphorus', id:'phosphorus', unit:'kg/ha' },
+        { label:'Potassium', id:'potassium', unit:'kg/ha' }, { label:'Organic Carbon', id:'organic_carbon', unit:'%' },
+        { label:'Boron', id:'boron', unit:'ppm' }, { label:'Sulphur', id:'sulphur', unit:'ppm' },
+        { label:'Zinc', id:'zinc', unit:'ppm' }, { label:'Iron', id:'iron', unit:'ppm' },
+        { label:'Manganese', id:'manganese', unit:'ppm' }, { label:'Copper', id:'copper', unit:'ppm' },
+    ];
+    document.getElementById('result-grid').innerHTML = items.map(i => `
+        <div class="result-item">
+            <div class="r-label">${i.label}</div>
+            <div class="r-value">${document.getElementById(i.id).value || '—'}</div>
+            <div class="r-unit">${i.unit}</div>
+        </div>`).join('');
+    const cat = getCategory(
+        parseFloat(document.getElementById('ph').value),
+        parseFloat(document.getElementById('nitrogen').value),
+        parseFloat(document.getElementById('phosphorus').value),
+        parseFloat(document.getElementById('potassium').value)
+    );
+    const banner = document.getElementById('category-banner');
+    banner.className = 'category-banner cat-' + cat.toLowerCase();
+    document.getElementById('cat-title').textContent = `Soil Health: ${cat}`;
+    document.querySelector('.cat-icon').textContent = { Fertile:'🌿', Moderate:'🌾', Poor:'🍂' }[cat];
+    document.getElementById('cat-desc').textContent = {
+        Fertile:  'Excellent soil health. Maintain current practices.',
+        Moderate: 'Some nutrients need attention. Consider targeted fertilization.',
+        Poor:     'Significant nutrient deficiencies. Recommend soil amendment.'
+    }[cat];
+}
+
+function updateUI() {
+    document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`panel-${currentStep}`).classList.add('active');
+    document.querySelectorAll('.step-item').forEach(el => {
+        el.classList.remove('active','done');
+        const s = parseInt(el.dataset.step);
+        if (s < currentStep) el.classList.add('done');
+        if (s === currentStep) el.classList.add('active');
+    });
+    document.getElementById('step-counter').textContent = `Step ${currentStep} of ${TOTAL}`;
+    document.getElementById('btn-prev').disabled = currentStep === 1;
+    const last = currentStep === TOTAL;
+    document.getElementById('btn-next').style.display  = last ? 'none' : '';
+    document.getElementById('btn-save').style.display  = last ? '' : 'none';
+    document.getElementById('btn-print').style.display = last ? '' : 'none';
+    if (last) buildSummary();
+}
+function nextStep() { if (currentStep < TOTAL) { currentStep++; updateUI(); } }
+function prevStep() { if (currentStep > 1)     { currentStep--; updateUI(); } }
+
+async function saveSample() {
+    const sid = document.getElementById('sample_id').value.trim();
+    const g = id => { const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? null : v; };
+    const s = id => document.getElementById(id).value || null;
+
+    const payload = {
+        farmer_name: s('farmer_name'), village: s('village'),
+        sample_type: s('sample_type'),
+        collection_date: getCollectionDate(),   // ← uses active mode
+        temperature: g('temperature'), moisture: g('moisture'),
+        ph: g('ph'), observed_ec: g('observed_ec'), ec_temperature: g('ec_temperature'), ec: g('ec'),
+        n_burette_a: g('n_burette_a'), n_burette_b: g('n_burette_b'), nitrogen: g('nitrogen'),
+        abs_phosphorus: g('abs_phosphorus'), phosphorus: g('phosphorus'),
+        abs_potassium: g('abs_potassium'),   potassium: g('potassium'),
+        abs_organic_carbon: g('abs_organic_carbon'), organic_carbon: g('organic_carbon'),
+        abs_boron: g('abs_boron'), boron: g('boron'),
+        abs_sulphur: g('abs_sulphur'), sulphur: g('sulphur'),
+        abs_zinc: g('abs_zinc'), zinc: g('zinc'),
+        abs_iron: g('abs_iron'), iron: g('iron'),
+        abs_manganese: g('abs_manganese'), manganese: g('manganese'),
+        abs_copper: g('abs_copper'), copper: g('copper'),
+        notes: s('notes'),
+    };
+
+    const url = (isUpdate && sid) ? `/api/update-sample/${sid}` : '/api/save-sample';
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true; btn.textContent = '⏳ Saving…';
+
+    try {
+        const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        const d = await r.json();
+        if (d.success) {
+            showToast(`✅ Sample ${d.sample_id} saved!`);
+            setTimeout(() => window.location.href = '/', 1800);
+        } else {
+            showToast('❌ Error: ' + (d.error || 'Save failed'));
+            btn.disabled = false; btn.textContent = '💾 Save to Database';
+        }
+    } catch(e) {
+        showToast('❌ Network error. Check Flask is running.');
+        btn.disabled = false; btn.textContent = '💾 Save to Database';
+    }
+}
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

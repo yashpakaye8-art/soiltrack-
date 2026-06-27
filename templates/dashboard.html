@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard - SoilTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #F4F1EB; font-family: 'Segoe UI', sans-serif; }
+        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; }
+        .sidebar .logo { color: #fff; font-size: 20px; font-weight: 700; padding: 10px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px; }
+        .sidebar .logo span { font-size: 12px; display: block; font-weight: 400; opacity: 0.7; margin-top: 2px; }
+        .sidebar a { color: rgba(255,255,255,0.85); text-decoration: none; display: block; padding: 10px 20px; font-size: 14px; transition: all 0.15s; }
+        .sidebar a:hover { background-color: #3A6B4A; color: #fff; }
+        .sidebar a.active { background-color: #3A6B4A; color: #fff; font-weight: 600; }
+        .sidebar .nav-section { color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 15px 20px 5px; }
+        .main-content { margin-left: 220px; padding: 30px; }
+        .topbar { background: white; padding: 15px 30px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
+        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; }
+        .stat-card { border-radius: 12px; padding: 20px 24px; color: white; }
+        .card { border: 1px solid #DDD9CF; border-radius: 12px; background: white; }
+        .badge-fertile  { background-color: #E6F2EA; color: #2D5A3D; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-moderate { background-color: #FDF4E3; color: #7A5010; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-poor     { background-color: #FCEAEA; color: #A83030; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .sample-id { font-family: monospace; font-size: 12px; background: #F4F1EB; border: 1px solid #DDD9CF; border-radius: 4px; padding: 2px 8px; }
+        table { width: 100%; }
+        thead th { font-size: 11px; font-weight: 700; color: #9A9485; text-transform: uppercase; letter-spacing: 0.6px; padding: 10px 14px; border-bottom: 1px solid #DDD9CF; }
+        tbody td { padding: 10px 14px; border-bottom: 1px solid #F4F1EB; font-size: 13px; vertical-align: middle; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover td { background-color: #FAFAF7; }
+        .sidebar-bottom { position: absolute; bottom: 0; width: 100%; border-top: 1px solid rgba(255,255,255,0.2); padding: 10px 0; }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <div class="logo">
+        🌱 SoilTrack
+        <span>Chemistry Department</span>
+    </div>
+    <div class="nav-section">Main</div>
+    <a href="/" class="active">📊 Dashboard</a>
+    <a href="/samples">📋 All Samples</a>
+    <a href="/add">➕ Add Sample</a>
+    <a href="/lab-calculation">🧪 Lab Calculation</a>
+    <div class="nav-section">Settings</div>
+    <a href="/dilution-factors">⚗️ Dilution Factors</a>
+    <div class="nav-section">Export</div>
+    <a href="/export">⬇ Export to Excel</a>
+    <div class="sidebar-bottom">
+        <div class="nav-section">Account</div>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+</div>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div class="topbar-title">Dashboard</div>
+    <div style="display:flex;align-items:center;gap:14px">
+        <a href="/lab-calculation" class="btn btn-sm" style="background:#3A6B4A;color:white;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600;text-decoration:none;">🧪 Lab Calculation</a>
+        <a href="/add" class="btn btn-sm" style="background:#4A7C59;color:white;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600;text-decoration:none;">+ Add Sample</a>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="main-content">
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card" style="background:#4A7C59">
+                <div style="font-size:12px;opacity:0.8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px">Total Samples</div>
+                <div style="font-size:32px;font-weight:700;line-height:1">{{ total }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background:#5A8F6A">
+                <div style="font-size:12px;opacity:0.8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px">Fertile</div>
+                <div style="font-size:32px;font-weight:700;line-height:1">{{ fertile }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background:#C4923A">
+                <div style="font-size:12px;opacity:0.8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px">Moderate</div>
+                <div style="font-size:32px;font-weight:700;line-height:1">{{ moderate }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background:#B84A4A">
+                <div style="font-size:12px;opacity:0.8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px">Poor</div>
+                <div style="font-size:32px;font-weight:700;line-height:1">{{ poor }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Samples -->
+    <div class="card">
+        <div style="padding:16px 20px;border-bottom:1px solid #DDD9CF;display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:13px;font-weight:700;color:#5C5849;text-transform:uppercase;letter-spacing:0.5px">Recent Samples</div>
+            <a href="/samples" style="font-size:13px;color:#4A7C59;font-weight:600;text-decoration:none">View All →</a>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Sample ID</th>
+                    <th>Village</th>
+                    <th>Farmer</th>
+                    <th>Year</th>
+                    <th>Category</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sample in recent %}
+                <tr>
+                    <td><span class="sample-id">{{ sample.sample_id }}</span></td>
+                    <td>{{ sample.village }}</td>
+                    <td>{{ sample.farmer_name }}</td>
+                    <td>{{ sample.collection_date }}</td>
+                    <td>
+                        {% if sample.category == 'Fertile' %}
+                            <span class="badge-fertile">● Fertile</span>
+                        {% elif sample.category == 'Moderate' %}
+                            <span class="badge-moderate">● Moderate</span>
+                        {% else %}
+                            <span class="badge-poor">● Poor</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/sample/{{ sample.id }}" style="color:#4A7C59;font-weight:600;font-size:13px;text-decoration:none;margin-right:10px;">View →</a>
+                        <a href="/lab-calculation" onclick="sessionStorage.setItem('prefill_id','{{ sample.sample_id }}')" style="color:#3A6B4A;font-weight:600;font-size:13px;text-decoration:none;">🧪 Edit Lab</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

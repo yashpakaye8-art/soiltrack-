@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>User Management - SoilTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #F4F1EB; font-family: 'Segoe UI', sans-serif; }
+        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; }
+        .sidebar .logo { color: #fff; font-size: 20px; font-weight: 700; padding: 10px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px; }
+        .sidebar .logo span { font-size: 12px; display: block; font-weight: 400; opacity: 0.7; margin-top: 2px; }
+        .sidebar a { color: rgba(255,255,255,0.85); text-decoration: none; display: block; padding: 10px 20px; font-size: 14px; transition: all 0.15s; }
+        .sidebar a:hover { background-color: #3A6B4A; color: #fff; }
+        .sidebar a.active { background-color: #3A6B4A; color: #fff; font-weight: 600; }
+        .sidebar .nav-section { color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 15px 20px 5px; }
+        .sidebar-bottom { position: absolute; bottom: 0; width: 100%; border-top: 1px solid rgba(255,255,255,0.2); padding: 10px 0; }
+        .main-content { margin-left: 220px; padding: 30px; }
+        .topbar { background: white; padding: 15px 30px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
+        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; }
+        .card { border: 1px solid #DDD9CF; border-radius: 12px; background: white; overflow: hidden; }
+        .badge-admin { background-color: #E8F0F9; color: #2A5080; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-staff { background-color: #E6F2EA; color: #2D5A3D; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-you { background-color: #FDF4E3; color: #7A5010; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        table { width: 100%; }
+        thead th { font-size: 11px; font-weight: 700; color: #9A9485; text-transform: uppercase; letter-spacing: 0.6px; padding: 10px 14px; border-bottom: 1px solid #DDD9CF; background: #FAFAF7; }
+        tbody td { padding: 12px 14px; border-bottom: 1px solid #F4F1EB; font-size: 13px; vertical-align: middle; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover td { background-color: #FAFAF7; }
+        .btn-delete-user { background: #FCEAEA; color: #A83030; border: 1px solid #E8C0C0; border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; }
+        .admin-only { background: #FDF4E3; border: 1px solid #EDD09A; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; color: #7A5010; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="logo">🌱 SoilTrack<span>Chemistry Department</span></div>
+    <div class="nav-section">Main</div>
+    <a href="/">📊 Dashboard</a>
+    <a href="/samples">📋 All Samples</a>
+    <a href="/add">➕ Add Sample</a>
+    <div class="nav-section">Export</div>
+    <a href="/export">⬇ Export to Excel</a>
+    <div class="nav-section">Admin</div>
+    <a href="/users" class="active">👥 User Management</a>
+    <div class="sidebar-bottom">
+        <div class="nav-section">Account</div>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+</div>
+
+<div class="topbar">
+    <div class="topbar-title">User Management</div>
+    <a href="/register" style="background:#4A7C59;color:white;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600;text-decoration:none">+ Add New User</a>
+</div>
+
+<div class="main-content">
+
+    {% if current_user.role != 'admin' %}
+    <div class="admin-only">
+        ⚠️ Only admins can delete users. You can view the list but cannot make changes.
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div style="padding:16px 20px;border-bottom:1px solid #DDD9CF">
+            <div style="font-size:13px;font-weight:700;color:#5C5849;text-transform:uppercase;letter-spacing:0.5px">
+                All Users — {{ users|length }} total
+            </div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Full Name</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td style="color:#9A9485">{{ loop.index }}</td>
+                    <td style="font-weight:600">{{ user.fullname or '—' }}</td>
+                    <td>
+                        {{ user.username }}
+                        {% if user.id == current_user.id %}
+                            <span class="badge-you">You</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.role == 'admin' %}
+                            <span class="badge-admin">Admin</span>
+                        {% else %}
+                            <span class="badge-staff">Staff</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if current_user.role == 'admin' and user.id != current_user.id %}
+                            <a href="/delete_user/{{ user.id }}"
+                               class="btn-delete-user"
+                               onclick="return confirm('Delete user {{ user.username }}?')">
+                               Delete
+                            </a>
+                        {% else %}
+                            <span style="font-size:12px;color:#9A9485">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

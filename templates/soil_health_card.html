@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Soil Health Card - {{ sample.farmer_name }}</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f0f0; }
+
+        .page { width: 210mm; min-height: 297mm; margin: 20px auto; background: white; padding: 16mm; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+
+        /* Header */
+        .header { text-align: center; border-bottom: 3px solid #4A7C59; padding-bottom: 12px; margin-bottom: 16px; }
+        .header .gov-title { font-size: 13px; color: #555; font-weight: 600; margin-bottom: 4px; }
+        .header h1 { font-size: 26px; font-weight: 800; color: #4A7C59; letter-spacing: 1px; margin-bottom: 2px; }
+        .header .subtitle { font-size: 12px; color: #888; }
+        .header .card-no { font-size: 12px; color: #4A7C59; font-weight: 700; margin-top: 6px; }
+
+        /* Farmer Info */
+        .farmer-section { background: #F4F1EB; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
+        .farmer-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .farmer-item .label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+        .farmer-item .value { font-size: 14px; font-weight: 700; color: #1A1814; margin-top: 2px; }
+
+        /* Section Title */
+        .section-title { font-size: 11px; font-weight: 800; color: #4A7C59; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; border-left: 3px solid #4A7C59; padding-left: 8px; }
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; }
+        thead tr { background: #4A7C59; color: white; }
+        thead th { padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
+        tbody tr:nth-child(even) { background: #F9F8F5; }
+        tbody td { padding: 7px 10px; border-bottom: 1px solid #EEE; color: #1A1814; }
+
+        .status-high   { background: #E6F2EA; color: #2D5A3D; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+        .status-medium { background: #FDF4E3; color: #7A5010; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+        .status-low    { background: #FCEAEA; color: #A83030; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+
+        /* Recommendation */
+        .rec-box { border: 1px solid #4A7C59; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
+        .rec-box .rec-title { font-size: 11px; font-weight: 800; color: #4A7C59; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .rec-items { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .rec-item { font-size: 12px; color: #333; padding: 4px 0; }
+        .rec-item::before { content: "✓ "; color: #4A7C59; font-weight: 700; }
+
+        /* Footer */
+        .footer { border-top: 2px solid #4A7C59; padding-top: 10px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .sign-box { text-align: center; }
+        .sign-line { border-top: 1px solid #333; width: 150px; margin: 30px auto 4px; }
+        .sign-label { font-size: 10px; color: #888; }
+        .stamp-box { width: 80px; height: 80px; border: 2px dashed #ccc; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #ccc; }
+
+        /* Action Buttons */
+        .action-bar { text-align: center; padding: 16px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+        .btn-back   { background: #F4F1EB; color: #4A7C59; border: 1px solid #4A7C59; padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; }
+        .btn-print  { background: #4A7C59; color: white; border: none; padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .btn-pdf    { background: #B84A4A; color: white; border: none; padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-pdf:hover  { background: #9a3a3a; }
+        .btn-print:hover { background: #3A6B4A; }
+
+        /* Loading spinner */
+        .pdf-loading { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+        .pdf-loading.show { display: flex; }
+        .spinner { width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        .pdf-loading p { color: white; font-size: 15px; font-weight: 600; font-family: 'Segoe UI', sans-serif; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Print */
+        @media print {
+            body { background: white; }
+            .page { margin: 0; box-shadow: none; padding: 12mm; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Loading overlay for PDF -->
+<div class="pdf-loading" id="pdf-loading">
+    <div class="spinner"></div>
+    <p>Generating PDF... Please wait</p>
+</div>
+
+<!-- Action Buttons -->
+<div class="action-bar no-print">
+    <a href="/sample/{{ sample.id }}" class="btn-back">← Back</a>
+    <button onclick="window.print()" class="btn-print">🖨️ Print Card</button>
+    <button onclick="downloadPDF()" class="btn-pdf">📄 Download PDF</button>
+</div>
+
+<!-- Health Card Page -->
+<div class="page" id="health-card">
+
+    <!-- Header -->
+    <div class="header">
+        <div class="gov-title">Government of Maharashtra — Soil Health Card Scheme</div>
+        <h1>🌱 SOIL HEALTH CARD</h1>
+        <div class="subtitle">Chemistry Department — SoilTrack System</div>
+        <div class="card-no">Card No: {{ sample.sample_id }} &nbsp;|&nbsp; Year: {{ sample.collection_date }}</div>
+    </div>
+
+    <!-- Farmer Info -->
+    <div class="farmer-section">
+        <div class="farmer-grid">
+            <div class="farmer-item">
+                <div class="label">Farmer Name</div>
+                <div class="value">{{ sample.farmer_name or '—' }}</div>
+            </div>
+            <div class="farmer-item">
+                <div class="label">Village</div>
+                <div class="value">{{ sample.village or '—' }}</div>
+            </div>
+            <div class="farmer-item">
+                <div class="label">Sample Type</div>
+                <div class="value">{{ sample.sample_type or 'Soil' }}</div>
+            </div>
+            <div class="farmer-item">
+                <div class="label">Sample ID</div>
+                <div class="value" style="font-family:monospace">{{ sample.sample_id }}</div>
+            </div>
+            <div class="farmer-item">
+                <div class="label">Collection Date</div>
+                <div class="value">{{ sample.collection_date or '—' }}</div>
+            </div>
+            <div class="farmer-item">
+                <div class="label">Overall Status</div>
+                <div class="value">
+                    {% if sample.category == 'Fertile' %}🟢 Fertile
+                    {% elif sample.category == 'Moderate' %}🟡 Moderate
+                    {% else %}🔴 Poor{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Physical Properties -->
+    <div class="section-title">Physical Properties</div>
+    <table>
+        <thead>
+            <tr><th>Parameter</th><th>Value</th><th>Unit</th><th>Normal Range</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>pH</strong></td>
+                <td>{{ sample.ph or '—' }}</td>
+                <td>—</td>
+                <td>6.5 – 7.5</td>
+                <td>{% if sample.ph %}{% if 6.5 <= sample.ph <= 7.5 %}<span class="status-high">Optimal</span>{% elif 6.0 <= sample.ph < 6.5 or 7.5 < sample.ph <= 8.0 %}<span class="status-medium">Acceptable</span>{% else %}<span class="status-low">Needs Correction</span>{% endif %}{% endif %}</td>
+            </tr>
+            <tr>
+                <td><strong>EC (Electrical Conductivity)</strong></td>
+                <td>{{ sample.ec or '—' }}</td>
+                <td>dS/m</td>
+                <td>0.2 – 0.8</td>
+                <td>{% if sample.ec %}{% if sample.ec <= 0.8 %}<span class="status-high">Normal</span>{% elif sample.ec <= 1.6 %}<span class="status-medium">Slightly High</span>{% else %}<span class="status-low">High</span>{% endif %}{% endif %}</td>
+            </tr>
+            <tr>
+                <td><strong>Organic Carbon</strong></td>
+                <td>{{ sample.organic_carbon or '—' }}</td>
+                <td>%</td>
+                <td>> 0.75%</td>
+                <td>{% if sample.organic_carbon %}{% if sample.organic_carbon >= 0.75 %}<span class="status-high">High</span>{% elif sample.organic_carbon >= 0.5 %}<span class="status-medium">Medium</span>{% else %}<span class="status-low">Low</span>{% endif %}{% endif %}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Macro Nutrients -->
+    <div class="section-title">Macro Nutrients (NPK)</div>
+    <table>
+        <thead>
+            <tr><th>Nutrient</th><th>Value</th><th>Unit</th><th>Low / Medium / High</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Nitrogen (N)</strong></td>
+                <td>{{ sample.nitrogen or '—' }}</td>
+                <td>kg/ha</td>
+                <td>&lt;280 / 280–560 / &gt;560</td>
+                <td>{% if sample.nitrogen %}{% if sample.nitrogen >= 560 %}<span class="status-high">High</span>{% elif sample.nitrogen >= 280 %}<span class="status-medium">Medium</span>{% else %}<span class="status-low">Low</span>{% endif %}{% endif %}</td>
+            </tr>
+            <tr>
+                <td><strong>Phosphorus (P)</strong></td>
+                <td>{{ sample.phosphorus or '—' }}</td>
+                <td>kg/ha</td>
+                <td>&lt;11 / 11–22 / &gt;22</td>
+                <td>{% if sample.phosphorus %}{% if sample.phosphorus >= 22 %}<span class="status-high">High</span>{% elif sample.phosphorus >= 11 %}<span class="status-medium">Medium</span>{% else %}<span class="status-low">Low</span>{% endif %}{% endif %}</td>
+            </tr>
+            <tr>
+                <td><strong>Potassium (K)</strong></td>
+                <td>{{ sample.potassium or '—' }}</td>
+                <td>kg/ha</td>
+                <td>&lt;110 / 110–280 / &gt;280</td>
+                <td>{% if sample.potassium %}{% if sample.potassium >= 280 %}<span class="status-high">High</span>{% elif sample.potassium >= 110 %}<span class="status-medium">Medium</span>{% else %}<span class="status-low">Low</span>{% endif %}{% endif %}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Micro Nutrients -->
+    <div class="section-title">Micro Nutrients</div>
+    <table>
+        <thead>
+            <tr><th>Nutrient</th><th>Value</th><th>Unit</th><th>Sufficiency Level</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Sulphur (S)</strong></td><td>{{ sample.sulphur or '—' }}</td><td>ppm</td><td>> 10 ppm</td>
+                <td>{% if sample.sulphur %}{% if sample.sulphur >= 10 %}<span class="status-high">Sufficient</span>{% else %}<span class="status-low">Deficient</span>{% endif %}{% endif %}</td>
+            </tr>
+            <tr>
+                <td><strong>Zinc (Zn)</strong></td><td>{{ sample.zinc or '—' }}</td><td>ppm</td><td>> 0.6 ppm</td>
+                <td>{% if sample.zinc %}{% if sample.zinc >= 0.6 %}<span class="status-high">Sufficient</span>{% else %}<span class="status-low">Deficient</span>{% endif %}{% endif %}</td>
+            </tr>
+            <tr>
+                <td><strong>Boron (B)</strong></td><td>{{ sample.boron or '—' }}</td><td>ppm</td><td>> 0.5 ppm</td>
+                <td>{% if sample.boron %}{% if sample.boron >= 0.5 %}<span class="status-high">Sufficient</span>{% else %}<span class="status-low">Deficient</span>{% endif %}{% endif %}</td>
+            </tr>
+            <tr>
+                <td><strong>Iron (Fe)</strong></td><td>{{ sample.iron or '—' }}</td><td>ppm</td><td>> 4.5 ppm</td>
+                <td>{% if sample.iron %}{% if sample.iron >= 4.5 %}<span class="status-high">Sufficient</span>{% else %}<span class="status-low">Deficient</span>{% endif %}{% endif %}</td>
+            </tr>
+            <tr>
+                <td><strong>Manganese (Mn)</strong></td><td>{{ sample.manganese or '—' }}</td><td>ppm</td><td>> 2.0 ppm</td>
+                <td>{% if sample.manganese %}{% if sample.manganese >= 2.0 %}<span class="status-high">Sufficient</span>{% else %}<span class="status-low">Deficient</span>{% endif %}{% endif %}</td>
+            </tr>
+            <tr>
+                <td><strong>Copper (Cu)</strong></td><td>{{ sample.copper or '—' }}</td><td>ppm</td><td>> 0.2 ppm</td>
+                <td>{% if sample.copper %}{% if sample.copper >= 0.2 %}<span class="status-high">Sufficient</span>{% else %}<span class="status-low">Deficient</span>{% endif %}{% endif %}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Recommendations -->
+    <div class="rec-box">
+        <div class="rec-title">🌿 Fertiliser Recommendations</div>
+        <div class="rec-items">
+            {% if sample.nitrogen and sample.nitrogen < 280 %}<div class="rec-item">Apply Urea or DAP to increase Nitrogen</div>{% endif %}
+            {% if sample.phosphorus and sample.phosphorus < 11 %}<div class="rec-item">Apply SSP or DAP to increase Phosphorus</div>{% endif %}
+            {% if sample.potassium and sample.potassium < 110 %}<div class="rec-item">Apply MOP (Muriate of Potash) for Potassium</div>{% endif %}
+            {% if sample.organic_carbon and sample.organic_carbon < 0.75 %}<div class="rec-item">Add compost or FYM to improve Organic Carbon</div>{% endif %}
+            {% if sample.zinc and sample.zinc < 0.6 %}<div class="rec-item">Apply Zinc Sulphate @ 25 kg/ha</div>{% endif %}
+            {% if sample.boron and sample.boron < 0.5 %}<div class="rec-item">Apply Borax @ 10 kg/ha for Boron deficiency</div>{% endif %}
+            {% if sample.sulphur and sample.sulphur < 10 %}<div class="rec-item">Apply Elemental Sulphur or Gypsum</div>{% endif %}
+            {% if sample.ph and sample.ph < 6.0 %}<div class="rec-item">Apply Agricultural Lime to raise pH</div>{% endif %}
+            {% if sample.ph and sample.ph > 8.0 %}<div class="rec-item">Apply Gypsum or Sulphur to lower pH</div>{% endif %}
+            {% if sample.category == 'Fertile' %}
+            <div class="rec-item">Soil is healthy — maintain current practices</div>
+            <div class="rec-item">Re-test after 6 months for best results</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="sign-box">
+            <div class="sign-line"></div>
+            <div class="sign-label">Lab Technician Signature</div>
+        </div>
+        <div class="stamp-box">STAMP</div>
+        <div class="sign-box">
+            <div class="sign-line"></div>
+            <div class="sign-label">Authorised Signatory</div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function downloadPDF() {
+    const loading = document.getElementById('pdf-loading');
+    loading.classList.add('show');
+
+    const element = document.getElementById('health-card');
+    const filename = 'SoilHealthCard_{{ sample.sample_id }}_{{ sample.farmer_name | replace(" ", "_") }}.pdf';
+
+    const opt = {
+        margin:       [5, 5, 5, 5],
+        filename:     filename,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+        loading.classList.remove('show');
+    }).catch(() => {
+        loading.classList.remove('show');
+        alert('PDF generation failed. Please try Print instead.');
+    });
+}
+</script>
+</body>
+</html>

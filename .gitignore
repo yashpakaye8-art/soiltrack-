@@ -1,0 +1,36 @@
+# Environment variables (contains passwords - NEVER upload this)
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Database files (local SQLite if any)
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Flask
+.flaskenv
+
+# Logs
+*.log

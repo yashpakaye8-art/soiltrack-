@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dilution Factors — SoilTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #F4F1EB; font-family: 'Segoe UI', sans-serif; }
+        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; }
+        .sidebar .logo { color: #fff; font-size: 20px; font-weight: 700; padding: 10px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px; }
+        .sidebar .logo span { font-size: 12px; display: block; font-weight: 400; opacity: 0.7; margin-top: 2px; }
+        .sidebar a { color: rgba(255,255,255,0.85); text-decoration: none; display: block; padding: 10px 20px; font-size: 14px; transition: all 0.15s; }
+        .sidebar a:hover { background-color: #3A6B4A; color: #fff; }
+        .sidebar a.active { background-color: #3A6B4A; color: #fff; font-weight: 600; }
+        .sidebar .nav-section { color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 15px 20px 5px; }
+        .main-content { margin-left: 220px; padding: 30px; }
+        .topbar { background: white; padding: 15px 30px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
+        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; }
+        .sidebar-bottom { position: absolute; bottom: 0; width: 100%; border-top: 1px solid rgba(255,255,255,0.2); padding: 10px 0; }
+        .card { border: 1px solid #DDD9CF; border-radius: 12px; background: white; padding: 30px; }
+        .info-box { background: #fff8e1; border: 1px solid #ffe082; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; color: #795548; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th { font-size: 11px; font-weight: 700; color: #9A9485; text-transform: uppercase; letter-spacing: 0.6px; padding: 10px 14px; border-bottom: 1px solid #DDD9CF; }
+        tbody td { padding: 12px 14px; border-bottom: 1px solid #F4F1EB; font-size: 14px; vertical-align: middle; }
+        tbody tr:last-child td { border-bottom: none; }
+        input[type="number"] { width: 130px; padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; text-align: center; }
+        input[type="number"]:focus { outline: none; border-color: #4A7C59; }
+        .unit { color: #9A9485; font-size: 13px; }
+        .alert-success { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <div class="logo">
+        🌱 SoilTrack
+        <span>Chemistry Department</span>
+    </div>
+    <div class="nav-section">Main</div>
+    <a href="/">📊 Dashboard</a>
+    <a href="/samples">📋 All Samples</a>
+    <a href="/add">➕ Add Sample</a>
+    <div class="nav-section">Settings</div>
+    <a href="/dilution-factors" class="active">⚗️ Dilution Factors</a>
+    <div class="nav-section">Export</div>
+    <a href="/export">⬇ Export to Excel</a>
+    <div class="sidebar-bottom">
+        <div class="nav-section">Account</div>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+</div>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div class="topbar-title">⚗️ Dilution Factor Settings</div>
+</div>
+
+<!-- Main Content -->
+<div class="main-content">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="info-box">
+        ℹ️ These are the multiplication factors used to calculate final values from raw lab readings.
+        Changes will apply to future calculations only — existing sample values are not changed automatically.
+    </div>
+
+    <div class="card">
+        <form method="POST" action="/dilution-factors/update">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Multiplication Factor</th>
+                        <th>Unit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in factors %}
+                    <tr>
+                        <td><strong>{{ f.label }}</strong></td>
+                        <td>
+                            <input type="number" name="{{ f.parameter }}"
+                                   value="{{ f.factor }}" step="0.0001" min="0">
+                        </td>
+                        <td class="unit">{{ f.unit }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit" class="btn mt-4 w-100"
+                style="background:#4A7C59;color:white;border-radius:8px;padding:10px;font-size:15px;font-weight:600">
+                💾 Save All Factors
+            </button>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

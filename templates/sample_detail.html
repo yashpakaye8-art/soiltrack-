@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sample Detail - SoilTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #F4F1EB; font-family: 'Segoe UI', sans-serif; }
+        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; }
+        .sidebar .logo { color: #fff; font-size: 20px; font-weight: 700; padding: 10px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px; }
+        .sidebar .logo span { font-size: 12px; display: block; font-weight: 400; opacity: 0.7; margin-top: 2px; }
+        .sidebar a { color: rgba(255,255,255,0.85); text-decoration: none; display: block; padding: 10px 20px; font-size: 14px; transition: all 0.15s; }
+        .sidebar a:hover { background-color: #3A6B4A; color: #fff; }
+        .sidebar a.active { background-color: #3A6B4A; color: #fff; font-weight: 600; }
+        .sidebar .nav-section { color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 15px 20px 5px; }
+        .sidebar-bottom { position: absolute; bottom: 0; width: 100%; border-top: 1px solid rgba(255,255,255,0.2); padding: 10px 0; }
+        .main-content { margin-left: 220px; padding: 30px; }
+        .topbar { background: white; padding: 15px 30px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
+        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; }
+        .card { border: 1px solid #DDD9CF; border-radius: 12px; background: white; padding: 20px; margin-bottom: 16px; }
+        .card-title { font-size: 11px; font-weight: 700; color: #9A9485; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; }
+        .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #F4F1EB; }
+        .detail-row:last-child { border-bottom: none; }
+        .dk { font-size: 12px; color: #9A9485; }
+        .dv { font-size: 13px; font-weight: 600; color: #1A1814; }
+        .badge-fertile  { background-color: #E6F2EA; color: #2D5A3D; padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+        .badge-moderate { background-color: #FDF4E3; color: #7A5010; padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+        .badge-poor     { background-color: #FCEAEA; color: #A83030; padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+        .sample-id { font-family: monospace; font-size: 15px; background: #F4F1EB; border: 1px solid #DDD9CF; border-radius: 6px; padding: 4px 12px; }
+        .param-box { background: #F4F1EB; border-radius: 8px; padding: 12px 14px; }
+        .param-name { font-size: 10px; font-weight: 700; color: #9A9485; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .param-val  { font-size: 20px; font-weight: 700; color: #1A1814; }
+        .param-unit { font-size: 11px; color: #9A9485; }
+        .btn-edit        { background: #4A7C59; color: white; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; text-decoration: none; }
+        .btn-health-card { background: #3A6B4A; color: white; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; text-decoration: none; }
+        .btn-lab         { background: #5A8F6A; color: white; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; text-decoration: none; }
+        .btn-delete      { background: #FCEAEA; color: #A83030; border: 1px solid #E8C0C0; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; text-decoration: none; }
+        .recommendation { background: #E6F2EA; border-radius: 8px; padding: 14px 16px; margin-top: 4px; }
+        .rec-title { font-size: 11px; font-weight: 700; color: #2D5A3D; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+        .rec-text  { font-size: 13px; color: #2D5A3D; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <div class="logo">🌱 SoilTrack<span>Chemistry Department</span></div>
+    <div class="nav-section">Main</div>
+    <a href="/">📊 Dashboard</a>
+    <a href="/samples" class="active">📋 All Samples</a>
+    <a href="/add">➕ Add Sample</a>
+    <a href="/lab-calculation">🧪 Lab Calculation</a>
+    <div class="nav-section">Settings</div>
+    <a href="/dilution-factors">⚗️ Dilution Factors</a>
+    <div class="nav-section">Export</div>
+    <a href="/export">⬇ Export to Excel</a>
+    <div class="sidebar-bottom">
+        <div class="nav-section">Account</div>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+</div>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div class="topbar-title">Sample Detail</div>
+    <div style="display:flex;gap:10px;align-items:center;">
+        <a href="/soil-health-card/{{ sample.id }}" class="btn-health-card">🌱 Soil Health Card</a>
+        <a href="/lab-calculation" onclick="sessionStorage.setItem('prefill_id','{{ sample.sample_id }}')" class="btn-lab">🧪 Edit Lab</a>
+        <a href="/edit/{{ sample.id }}" class="btn-edit">✏️ Edit</a>
+        <a href="/delete/{{ sample.id }}" class="btn-delete" onclick="return confirm('Are you sure you want to delete this sample?')">🗑 Delete</a>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="main-content" style="max-width:900px">
+
+    <!-- Sample ID + Category -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <span class="sample-id">{{ sample.sample_id }}</span>
+        {% if sample.category == 'Fertile' %}
+            <span class="badge-fertile">● Fertile</span>
+        {% elif sample.category == 'Moderate' %}
+            <span class="badge-moderate">● Moderate</span>
+        {% else %}
+            <span class="badge-poor">● Poor</span>
+        {% endif %}
+    </div>
+
+    <!-- Info Cards -->
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-title">Location Info</div>
+                <div class="detail-row"><span class="dk">Village</span><span class="dv">{{ sample.village }}</span></div>
+                <div class="detail-row"><span class="dk">Farmer</span><span class="dv">{{ sample.farmer_name }}</span></div>
+                <div class="detail-row"><span class="dk">Type</span><span class="dv">{{ sample.sample_type }}</span></div>
+                <div class="detail-row"><span class="dk">Notes</span><span class="dv">{{ sample.notes or '—' }}</span></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-title">Collection Info</div>
+                <div class="detail-row"><span class="dk">Date</span><span class="dv">{{ sample.collection_date }}</span></div>
+                <div class="detail-row"><span class="dk">Temperature</span><span class="dv">{{ sample.temperature or '—' }} °C</span></div>
+                <div class="detail-row"><span class="dk">Moisture</span><span class="dv">{{ sample.moisture or '—' }} %</span></div>
+                <div class="detail-row"><span class="dk">EC</span><span class="dv">{{ sample.ec or '—' }} dS/m</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parameters -->
+    <div class="card mb-3">
+        <div class="card-title">Soil Parameters</div>
+        <div class="row g-3">
+            <div class="col-md-2"><div class="param-box"><div class="param-name">pH</div><div class="param-val">{{ sample.ph or '—' }}</div></div></div>
+            <div class="col-md-2"><div class="param-box"><div class="param-name">Nitrogen</div><div class="param-val">{{ sample.nitrogen or '—' }}</div><div class="param-unit">kg/ha</div></div></div>
+            <div class="col-md-2"><div class="param-box"><div class="param-name">Phosphorus</div><div class="param-val">{{ sample.phosphorus or '—' }}</div><div class="param-unit">kg/ha</div></div></div>
+            <div class="col-md-2"><div class="param-box"><div class="param-name">Potassium</div><div class="param-val">{{ sample.potassium or '—' }}</div><div class="param-unit">kg/ha</div></div></div>
+            <div class="col-md-2"><div class="param-box"><div class="param-name">Iron (Fe)</div><div class="param-val">{{ sample.iron or '—' }}</div><div class="param-unit">ppm</div></div></div>
+            <div class="col-md-2"><div class="param-box"><div class="param-name">Zinc (Zn)</div><div class="param-val">{{ sample.zinc or '—' }}</div><div class="param-unit">ppm</div></div></div>
+            <div class="col-md-2"><div class="param-box"><div class="param-name">Copper (Cu)</div><div class="param-val">{{ sample.copper or '—' }}</div><div class="param-unit">ppm</div></div></div>
+            <div class="col-md-2"><div class="param-box"><div class="param-name">Manganese</div><div class="param-val">{{ sample.manganese or '—' }}</div><div class="param-unit">ppm</div></div></div>
+            <div class="col-md-2"><div class="param-box"><div class="param-name">Boron (B)</div><div class="param-val">{{ sample.boron or '—' }}</div><div class="param-unit">ppm</div></div></div>
+            <div class="col-md-2"><div class="param-box"><div class="param-name">Org. Carbon</div><div class="param-val">{{ sample.organic_carbon or '—' }}</div><div class="param-unit">%</div></div></div>
+            <div class="col-md-2"><div class="param-box"><div class="param-name">Sulphur (S)</div><div class="param-val">{{ sample.sulphur or '—' }}</div><div class="param-unit">ppm</div></div></div>
+        </div>
+
+        <div class="recommendation mt-3">
+            <div class="rec-title">💡 Recommendation</div>
+            <div class="rec-text">
+                {% if sample.category == 'Fertile' %}
+                    Soil is in excellent condition. NPK levels are good. Continue current fertilisation practices. Re-test after 6 months.
+                {% elif sample.category == 'Moderate' %}
+                    Soil has moderate nutrient levels. Consider targeted fertilisation. Monitor pH and add organic matter to improve fertility.
+                {% else %}
+                    Soil requires improvement. Apply balanced NPK fertiliser, add organic matter and adjust pH if needed before cultivation.
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <a href="/samples" style="color:#4A7C59;font-weight:600;font-size:13px;text-decoration:none">← Back to All Samples</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
