@@ -14,7 +14,7 @@ app.secret_key = os.getenv('SECRET_KEY', 'soiltrack2026secretkey')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = (
     f"mysql+pymysql://{os.getenv('MYSQL_USER', 'root')}:"
-    f"{os.getenv('MYSQL_PASSWORD', 'root1234')}@"
+    f"{os.getenv('MYSQL_PASSWORD', '')}@"
     f"{os.getenv('MYSQL_HOST', 'localhost')}/"
     f"{os.getenv('MYSQL_DB', 'soiltrack_db')}"
 )
@@ -109,7 +109,7 @@ def staff_or_admin_required(f):
             return redirect(url_for('login'))
         if session.get('role') not in ('staff', 'admin'):
             flash('You do not have permission to do that.', 'error')
-            return redirect(url_for('login'))
+            return redirect(url_for('all_samples'))
         return f(*args, **kwargs)
     return decorated
 
@@ -236,7 +236,7 @@ def login_post():
 
 @app.route('/register', methods=['GET'])
 def register():
-    list(get_flashed_messages())  # clear stray flash messages
+    list(get_flashed_messages())  # clear any stray flash messages from previous redirects
     admin_exists = User.query.filter_by(role='admin').first() is not None
     return render_template('register.html', error=None, admin_exists=admin_exists)
 
@@ -247,11 +247,14 @@ def register_post():
     password = request.form.get('password', '')
     confirm_password = request.form.get('confirm_password', '')
     role = request.form.get('role', 'staff')
-
-    # Force staff if admin already exists (security: prevent sneaky admin registration)
-    admin_exists = User.query.filter_by(role='admin').first() is not None
-    if admin_exists and role == 'admin':
+    if role not in ('staff', 'admin'):
         role = 'staff'
+
+    admin_exists = User.query.filter_by(role='admin').first() is not None
+
+    # Block creating a second admin even if someone bypasses the hidden UI pill
+    if role == 'admin' and admin_exists:
+        return render_template('register.html', error='An Admin account already exists for this system. Please register as Lab Staff instead.', admin_exists=admin_exists)
 
     if not username or not password:
         return render_template('register.html', error='Username and password are required.', admin_exists=admin_exists)
@@ -617,6 +620,7 @@ def lab_calculation():
 def api_factors():
     return jsonify(get_factors_dict())
 
+# ── UPDATED: returns ALL fields for auto-fill ──
 @app.route('/api/sample-by-id/<sample_id>')
 def api_sample_by_id(sample_id):
     sample = Sample.query.filter_by(sample_id=sample_id).first()
@@ -624,29 +628,35 @@ def api_sample_by_id(sample_id):
         return jsonify({'found': False})
     return jsonify({
         'found': True,
+        # Step 1
         'farmer_name':     sample.farmer_name,
         'village':         sample.village,
         'sample_type':     sample.sample_type,
         'collection_date': sample.collection_date,
         'temperature':     sample.temperature,
         'moisture':        sample.moisture,
+        # Step 2
         'ph':              sample.ph,
         'observed_ec':     sample.observed_ec,
         'ec_temperature':  sample.ec_temperature,
         'ec':              sample.ec,
+        # Step 3
         'n_burette_a':     sample.n_burette_a,
         'n_burette_b':     sample.n_burette_b,
         'nitrogen':        sample.nitrogen,
+        # Step 4
         'abs_phosphorus':  sample.abs_phosphorus,
         'phosphorus':      sample.phosphorus,
         'abs_potassium':   sample.abs_potassium,
         'potassium':       sample.potassium,
+        # Step 5
         'abs_organic_carbon': sample.abs_organic_carbon,
         'organic_carbon':     sample.organic_carbon,
         'abs_boron':          sample.abs_boron,
         'boron':              sample.boron,
         'abs_sulphur':        sample.abs_sulphur,
         'sulphur':            sample.sulphur,
+        # Step 6
         'abs_zinc':        sample.abs_zinc,
         'zinc':            sample.zinc,
         'abs_iron':        sample.abs_iron,
@@ -655,6 +665,7 @@ def api_sample_by_id(sample_id):
         'manganese':       sample.manganese,
         'abs_copper':      sample.abs_copper,
         'copper':          sample.copper,
+        # Step 7
         'notes':           sample.notes,
     })
 
