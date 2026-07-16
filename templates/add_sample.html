@@ -68,15 +68,39 @@
                     <input type="text" name="village" id="village-input" required placeholder="e.g. Ratnagiri" oninput="updateID(this.value)">
                 </div>
                 <div class="col-md-6">
-                    <label>Sample Type</label>
-                    <select name="sample_type">
-                        <option value="Government">Government</option>
-                        <option value="Private">Private</option>
+                    <label>Sample Source</label>
+                    <select name="sample_source" id="sample-source-select" onchange="toggleScheme(this.value)">
+                        <option value="govt">Government</option>
+                        <option value="private">Private</option>
                     </select>
+                </div>
+                <div class="col-md-6" id="scheme-wrapper" style="display:none;">
+                    <label>Scheme</label>
+                    <input type="text" name="scheme" list="scheme-options" placeholder="Select or type a scheme name">
+                    <datalist id="scheme-options">
+                        <option value="PM-KISAN">
+                        <option value="Soil Health Card Scheme">
+                        <option value="PMKSY">
+                        <option value="RKVY">
+                        <option value="Paramparagat Krishi Vikas Yojana">
+                    </datalist>
+                    <div class="hint">Pick a common scheme or type a new one</div>
                 </div>
                 <div class="col-md-6">
                     <label>Farmer / Owner Name</label>
                     <input type="text" name="farmer_name" placeholder="e.g. Suresh Patil">
+                </div>
+                <div class="col-md-6">
+                    <label>Phone Number</label>
+                    <input type="tel" name="phone_number" placeholder="e.g. 9876543210">
+                </div>
+                <div class="col-md-6">
+                    <label>Address</label>
+                    <input type="text" name="address" placeholder="e.g. Post Ratnagiri, Tal. Ratnagiri">
+                </div>
+                <div class="col-md-6">
+                    <label>Survey Number</label>
+                    <input type="text" name="survey_number" placeholder="e.g. 145/2A">
                 </div>
                 <div class="col-md-6">
                     <label>Collection Year / Date</label>
@@ -93,79 +117,7 @@
                     <div class="hint" id="date-hint">Enter year range like 2025-2026</div>
                 </div>
             </div>
-            <div class="section-title">Physical Properties</div>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label>pH Value</label>
-                    <input type="number" step="0.1" name="ph" placeholder="e.g. 6.8" min="0" max="14">
-                    <div class="hint">Measured at constant temperature (25°C)</div>
-                </div>
-                <div class="col-md-6">
-                    <label>EC — Electrical Conductivity (dS/m)</label>
-                    <input type="number" step="0.01" name="ec" placeholder="e.g. 0.42">
-                </div>
-                <div class="col-md-6">
-                    <label>Temperature (°C)</label>
-                    <input type="number" step="0.1" name="temperature" placeholder="e.g. 28">
-                </div>
-                <div class="col-md-6">
-                    <label>Moisture (%)</label>
-                    <input type="number" step="0.1" name="moisture" placeholder="e.g. 35">
-                </div>
-            </div>
-            <div class="section-title">Essential Nutrients — NPK</div>
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label>Nitrogen — N (mg/kg)</label>
-                    <input type="number" step="0.1" name="nitrogen" placeholder="e.g. 280">
-                    <div class="hint">High >280 | Medium 140–280 | Low &lt;140</div>
-                </div>
-                <div class="col-md-4">
-                    <label>Phosphorus — P (mg/kg)</label>
-                    <input type="number" step="0.1" name="phosphorus" placeholder="e.g. 45">
-                    <div class="hint">High >40 | Medium 20–40 | Low &lt;20</div>
-                </div>
-                <div class="col-md-4">
-                    <label>Potassium — K (mg/kg)</label>
-                    <input type="number" step="0.1" name="potassium" placeholder="e.g. 180">
-                    <div class="hint">High >160 | Medium 80–160 | Low &lt;80</div>
-                </div>
-            </div>
-            <div class="section-title">Micro Nutrients</div>
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label>Iron — Fe (mg/kg)</label>
-                    <input type="number" step="0.1" name="iron" placeholder="e.g. 4.5">
-                </div>
-                <div class="col-md-3">
-                    <label>Manganese — Mn (mg/kg)</label>
-                    <input type="number" step="0.1" name="manganese" placeholder="e.g. 3.2">
-                </div>
-                <div class="col-md-3">
-                    <label>Copper — Cu (mg/kg)</label>
-                    <input type="number" step="0.1" name="copper" placeholder="e.g. 1.8">
-                </div>
-                <div class="col-md-3">
-                    <label>Zinc — Zn (mg/kg)</label>
-                    <input type="number" step="0.1" name="zinc" placeholder="e.g. 1.5">
-                </div>
-                <div class="col-md-3">
-                    <label>Boron — B (mg/kg)</label>
-                    <input type="number" step="0.01" name="boron" placeholder="e.g. 0.82">
-                </div>
-                <div class="col-md-3">
-                    <label>Organic Carbon — OC (%)</label>
-                    <input type="number" step="0.01" name="organic_carbon" placeholder="e.g. 0.72">
-                </div>
-                <div class="col-md-3">
-                    <label>Sulphur — S (mg/kg)</label>
-                    <input type="number" step="0.1" name="sulphur" placeholder="e.g. 12.4">
-                </div>
-                <div class="col-md-3">
-                    <label>Notes</label>
-                    <input type="text" name="notes" placeholder="colour, texture...">
-                </div>
-            </div>
+
             <div style="margin-top:24px;display:flex;gap:10px">
                 <button type="submit" class="btn-save">Save Sample</button>
                 <a href="/samples" class="btn-cancel">Cancel</a>
@@ -179,6 +131,17 @@ function updateID(village) {
     const code = village.substring(0, 3).toUpperCase();
     document.getElementById('id-preview').textContent = code ? code + '-01' : '???-01';
 }
+
+function toggleScheme(sourceValue) {
+    const wrapper = document.getElementById('scheme-wrapper');
+    wrapper.style.display = (sourceValue === 'govt') ? '' : 'none';
+}
+
+// Run once on page load in case browser restores a previous selection
+document.addEventListener('DOMContentLoaded', function () {
+    const select = document.getElementById('sample-source-select');
+    toggleScheme(select.value);
+});
 
 let currentMode = 'year';
 

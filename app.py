@@ -21,6 +21,21 @@ app.config['SQLALCHEMY_DATABASE_URI'] = (
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+# UNIT LABELS for display on calculation page / Excel headers
+PARAMETER_UNITS = {
+    'nitrogen': 'kg/ha',
+    'phosphorus': 'kg/ha',
+    'potassium': 'kg/ha',
+    'organic_carbon': '%',
+    'ec': 'mS/cm',
+    'sulphur': 'ppm',
+    'boron': 'ppm',
+    'zinc': 'ppm',
+    'iron': 'ppm',
+    'manganese': 'ppm',
+    'copper': 'ppm',
+}
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     fullname = db.Column(db.String(100))
@@ -35,6 +50,14 @@ class Sample(db.Model):
     sample_type = db.Column(db.String(20))
     farmer_name = db.Column(db.String(100))
     collection_date = db.Column(db.String(20))
+
+    # NEW: basic collection-time info
+    phone_number = db.Column(db.String(20))
+    address = db.Column(db.String(255))
+    survey_number = db.Column(db.String(50))
+    sample_source = db.Column(db.String(20))   # 'govt' or 'private'
+    scheme = db.Column(db.String(150))         # only relevant when sample_source == 'govt'
+
     ph = db.Column(db.Float)
     ec = db.Column(db.Float)
     nitrogen = db.Column(db.Float)
@@ -47,8 +70,7 @@ class Sample(db.Model):
     boron = db.Column(db.Float)
     organic_carbon = db.Column(db.Float)
     sulphur = db.Column(db.Float)
-    temperature = db.Column(db.Float)
-    moisture = db.Column(db.Float)
+    # temperature / moisture REMOVED per request
     category = db.Column(db.String(20))
     notes = db.Column(db.String(200))
     observed_ec = db.Column(db.Float)
@@ -65,6 +87,11 @@ class Sample(db.Model):
     abs_iron = db.Column(db.Float)
     abs_manganese = db.Column(db.Float)
     abs_copper = db.Column(db.Float)
+
+    # Analyzed by / Checked by / Approved by — for Soil Health Card
+    analyzed_by = db.Column(db.String(100))
+    checked_by = db.Column(db.String(100))
+    approved_by = db.Column(db.String(100))
 
 class DilutionFactor(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -316,34 +343,14 @@ def add_sample():
 @app.route('/add', methods=['POST'])
 @staff_or_admin_required
 def save_sample():
+    """
+    Collection-time registration ONLY.
+    No chemistry parameters here anymore — those are entered later
+    via the Lab Calculation wizard once the sample is actually tested.
+    """
     village = request.form.get('village')
-    ph = request.form.get('ph', type=float)
-    nitrogen = request.form.get('nitrogen', type=float)
-    phosphorus = request.form.get('phosphorus', type=float)
-    potassium = request.form.get('potassium', type=float)
-    observed_ec    = request.form.get('observed_ec', type=float)
-    ec_temperature = request.form.get('ec_temperature', type=float)
-    n_burette_a    = request.form.get('n_burette_a', type=float)
-    n_burette_b    = request.form.get('n_burette_b', type=float)
-    abs_p  = request.form.get('abs_phosphorus', type=float)
-    abs_k  = request.form.get('abs_potassium', type=float)
-    abs_oc = request.form.get('abs_organic_carbon', type=float)
-    abs_b  = request.form.get('abs_boron', type=float)
-    abs_s  = request.form.get('abs_sulphur', type=float)
-    abs_zn = request.form.get('abs_zinc', type=float)
-    abs_fe = request.form.get('abs_iron', type=float)
-    abs_mn = request.form.get('abs_manganese', type=float)
-    abs_cu = request.form.get('abs_copper', type=float)
-
-    raw = {
-        'observed_ec': observed_ec, 'ec_temperature': ec_temperature,
-        'n_burette_a': n_burette_a, 'n_burette_b': n_burette_b,
-        'abs_phosphorus': abs_p, 'abs_potassium': abs_k,
-        'abs_organic_carbon': abs_oc, 'abs_boron': abs_b,
-        'abs_sulphur': abs_s, 'abs_zinc': abs_zn,
-        'abs_iron': abs_fe, 'abs_manganese': abs_mn, 'abs_copper': abs_cu,
-    }
-    calc = calculate_finals_from_raw(raw, get_factors_dict())
+    sample_source = request.form.get('sample_source', 'private')
+    scheme = request.form.get('scheme') if sample_source == 'govt' else None
 
     new_sample = Sample(
         sample_id       = generate_sample_id(village),
@@ -351,41 +358,17 @@ def save_sample():
         sample_type     = request.form.get('sample_type'),
         farmer_name     = request.form.get('farmer_name'),
         collection_date = request.form.get('collection_date'),
-        ph              = ph,
-        ec              = calc.get('ec') or request.form.get('ec', type=float),
-        nitrogen        = calc.get('nitrogen') or nitrogen,
-        phosphorus      = calc.get('phosphorus') or phosphorus,
-        potassium       = calc.get('potassium') or potassium,
-        iron            = calc.get('iron') or request.form.get('iron', type=float),
-        manganese       = calc.get('manganese') or request.form.get('manganese', type=float),
-        copper          = calc.get('copper') or request.form.get('copper', type=float),
-        zinc            = calc.get('zinc') or request.form.get('zinc', type=float),
-        boron           = calc.get('boron') or request.form.get('boron', type=float),
-        organic_carbon  = calc.get('organic_carbon') or request.form.get('organic_carbon', type=float),
-        sulphur         = calc.get('sulphur') or request.form.get('sulphur', type=float),
-        temperature     = request.form.get('temperature', type=float),
-        moisture        = request.form.get('moisture', type=float),
+        phone_number    = request.form.get('phone_number'),
+        address         = request.form.get('address'),
+        survey_number   = request.form.get('survey_number'),
+        sample_source   = sample_source,
+        scheme          = scheme,
         notes           = request.form.get('notes'),
-        category        = get_category(ph, calc.get('nitrogen') or nitrogen,
-                            calc.get('phosphorus') or phosphorus,
-                            calc.get('potassium') or potassium),
-        observed_ec        = observed_ec,
-        ec_temperature     = ec_temperature,
-        ec_comp_factor     = calc.get('ec_comp_factor'),
-        n_burette_a        = n_burette_a,
-        n_burette_b        = n_burette_b,
-        abs_phosphorus     = abs_p,
-        abs_potassium      = abs_k,
-        abs_organic_carbon = abs_oc,
-        abs_boron          = abs_b,
-        abs_sulphur        = abs_s,
-        abs_zinc           = abs_zn,
-        abs_iron           = abs_fe,
-        abs_manganese      = abs_mn,
-        abs_copper         = abs_cu,
+        category        = None,  # unknown until lab calculation is done
     )
     db.session.add(new_sample)
     db.session.commit()
+    flash(f'Sample {new_sample.sample_id} registered. Parameters can be added later via Lab Calculation.', 'success')
     return redirect(url_for('dashboard'))
 
 @app.route('/sample/<int:id>')
@@ -405,69 +388,25 @@ def edit_sample(id):
 @app.route('/edit/<int:id>', methods=['POST'])
 @staff_or_admin_required
 def update_sample(id):
+    """
+    Edits basic collection-time info only (village, farmer, phone,
+    address, survey number, scheme, notes). Chemistry parameters are
+    edited via the Lab Calculation wizard / api_update_sample instead.
+    """
     sample = db.session.get(Sample, id)
-    ph = request.form.get('ph', type=float)
-    nitrogen = request.form.get('nitrogen', type=float)
-    phosphorus = request.form.get('phosphorus', type=float)
-    potassium = request.form.get('potassium', type=float)
-    observed_ec    = request.form.get('observed_ec', type=float)
-    ec_temperature = request.form.get('ec_temperature', type=float)
-    n_burette_a    = request.form.get('n_burette_a', type=float)
-    n_burette_b    = request.form.get('n_burette_b', type=float)
-    abs_p  = request.form.get('abs_phosphorus', type=float)
-    abs_k  = request.form.get('abs_potassium', type=float)
-    abs_oc = request.form.get('abs_organic_carbon', type=float)
-    abs_b  = request.form.get('abs_boron', type=float)
-    abs_s  = request.form.get('abs_sulphur', type=float)
-    abs_zn = request.form.get('abs_zinc', type=float)
-    abs_fe = request.form.get('abs_iron', type=float)
-    abs_mn = request.form.get('abs_manganese', type=float)
-    abs_cu = request.form.get('abs_copper', type=float)
-
-    raw = {
-        'observed_ec': observed_ec, 'ec_temperature': ec_temperature,
-        'n_burette_a': n_burette_a, 'n_burette_b': n_burette_b,
-        'abs_phosphorus': abs_p, 'abs_potassium': abs_k,
-        'abs_organic_carbon': abs_oc, 'abs_boron': abs_b,
-        'abs_sulphur': abs_s, 'abs_zinc': abs_zn,
-        'abs_iron': abs_fe, 'abs_manganese': abs_mn, 'abs_copper': abs_cu,
-    }
-    calc = calculate_finals_from_raw(raw, get_factors_dict())
+    sample_source = request.form.get('sample_source', sample.sample_source or 'private')
+    scheme = request.form.get('scheme') if sample_source == 'govt' else None
 
     sample.village         = request.form.get('village')
     sample.sample_type     = request.form.get('sample_type')
     sample.farmer_name     = request.form.get('farmer_name')
     sample.collection_date = request.form.get('collection_date')
-    sample.ph              = ph
-    sample.ec              = calc.get('ec') or request.form.get('ec', type=float)
-    sample.temperature     = request.form.get('temperature', type=float)
-    sample.moisture        = request.form.get('moisture', type=float)
-    sample.nitrogen        = calc.get('nitrogen') or nitrogen
-    sample.phosphorus      = calc.get('phosphorus') or phosphorus
-    sample.potassium       = calc.get('potassium') or potassium
-    sample.iron            = calc.get('iron') or request.form.get('iron', type=float)
-    sample.manganese       = calc.get('manganese') or request.form.get('manganese', type=float)
-    sample.copper          = calc.get('copper') or request.form.get('copper', type=float)
-    sample.zinc            = calc.get('zinc') or request.form.get('zinc', type=float)
-    sample.boron           = calc.get('boron') or request.form.get('boron', type=float)
-    sample.organic_carbon  = calc.get('organic_carbon') or request.form.get('organic_carbon', type=float)
-    sample.sulphur         = calc.get('sulphur') or request.form.get('sulphur', type=float)
+    sample.phone_number    = request.form.get('phone_number')
+    sample.address         = request.form.get('address')
+    sample.survey_number   = request.form.get('survey_number')
+    sample.sample_source   = sample_source
+    sample.scheme          = scheme
     sample.notes           = request.form.get('notes')
-    sample.category        = get_category(ph, sample.nitrogen, sample.phosphorus, sample.potassium)
-    sample.observed_ec        = observed_ec
-    sample.ec_temperature     = ec_temperature
-    sample.ec_comp_factor     = calc.get('ec_comp_factor')
-    sample.n_burette_a        = n_burette_a
-    sample.n_burette_b        = n_burette_b
-    sample.abs_phosphorus     = abs_p
-    sample.abs_potassium      = abs_k
-    sample.abs_organic_carbon = abs_oc
-    sample.abs_boron          = abs_b
-    sample.abs_sulphur        = abs_s
-    sample.abs_zinc           = abs_zn
-    sample.abs_iron           = abs_fe
-    sample.abs_manganese      = abs_mn
-    sample.abs_copper         = abs_cu
     db.session.commit()
     return redirect(url_for('sample_detail', id=sample.id))
 
@@ -480,37 +419,53 @@ def delete_sample(id):
     return redirect(url_for('all_samples'))
 
 # ── Export ──
+def _export_headers():
+    return [
+        'Sample ID', 'Village', 'Type', 'Farmer', 'Phone Number', 'Address',
+        'Survey Number', 'Sample Source', 'Scheme', 'Date',
+        'pH', f"EC ({PARAMETER_UNITS['ec']})", f"OC ({PARAMETER_UNITS['organic_carbon']})",
+        f"Nitrogen ({PARAMETER_UNITS['nitrogen']})",
+        f"Phosphorus ({PARAMETER_UNITS['phosphorus']})",
+        f"Potassium ({PARAMETER_UNITS['potassium']})",
+        f"Iron ({PARAMETER_UNITS['iron']})",
+        f"Manganese ({PARAMETER_UNITS['manganese']})",
+        f"Copper ({PARAMETER_UNITS['copper']})",
+        f"Zinc ({PARAMETER_UNITS['zinc']})",
+        f"Boron ({PARAMETER_UNITS['boron']})",
+        f"Sulphur ({PARAMETER_UNITS['sulphur']})",
+        'Category', 'Notes',
+        'Observed EC', 'EC Temp', 'EC Comp Factor',
+        'N Burette A', 'N Burette B',
+        'Abs P', 'Abs K', 'Abs OC', 'Abs B', 'Abs S',
+        'Abs Zn', 'Abs Fe', 'Abs Mn', 'Abs Cu'
+    ]
+    # NOTE: Temperature / Moisture columns removed per request
+
+def _export_row(s):
+    return [
+        s.sample_id, s.village, s.sample_type, s.farmer_name,
+        s.phone_number, s.address, s.survey_number,
+        s.sample_source, s.scheme, s.collection_date,
+        s.ph, s.ec, s.organic_carbon,
+        s.nitrogen, s.phosphorus, s.potassium,
+        s.iron, s.manganese, s.copper, s.zinc, s.boron, s.sulphur,
+        s.category, s.notes,
+        s.observed_ec, s.ec_temperature, s.ec_comp_factor,
+        s.n_burette_a, s.n_burette_b,
+        s.abs_phosphorus, s.abs_potassium, s.abs_organic_carbon,
+        s.abs_boron, s.abs_sulphur, s.abs_zinc,
+        s.abs_iron, s.abs_manganese, s.abs_copper
+    ]
+
 @app.route('/export')
 @login_required
 def export_excel():
     samples = Sample.query.all()
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow([
-        'Sample ID', 'Village', 'Type', 'Farmer', 'Date',
-        'pH', 'EC', 'OC', 'Temperature', 'Moisture',
-        'Nitrogen', 'Phosphorus', 'Potassium',
-        'Iron', 'Manganese', 'Copper', 'Zinc', 'Boron', 'Sulphur',
-        'Category', 'Notes',
-        'Observed EC', 'EC Temp', 'EC Comp Factor',
-        'N Burette A', 'N Burette B',
-        'Abs P', 'Abs K', 'Abs OC', 'Abs B', 'Abs S',
-        'Abs Zn', 'Abs Fe', 'Abs Mn', 'Abs Cu'
-    ])
+    writer.writerow(_export_headers())
     for s in samples:
-        writer.writerow([
-            s.sample_id, s.village, s.sample_type,
-            s.farmer_name, s.collection_date,
-            s.ph, s.ec, s.organic_carbon, s.temperature, s.moisture,
-            s.nitrogen, s.phosphorus, s.potassium,
-            s.iron, s.manganese, s.copper, s.zinc, s.boron, s.sulphur,
-            s.category, s.notes,
-            s.observed_ec, s.ec_temperature, s.ec_comp_factor,
-            s.n_burette_a, s.n_burette_b,
-            s.abs_phosphorus, s.abs_potassium, s.abs_organic_carbon,
-            s.abs_boron, s.abs_sulphur, s.abs_zinc,
-            s.abs_iron, s.abs_manganese, s.abs_copper
-        ])
+        writer.writerow(_export_row(s))
     output.seek(0)
     return Response(output, mimetype='text/csv',
                     headers={"Content-Disposition": "attachment;filename=soiltrack_samples.csv"})
@@ -526,31 +481,9 @@ def export_selected():
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow([
-        'Sample ID', 'Village', 'Type', 'Farmer', 'Date',
-        'pH', 'EC', 'OC', 'Temperature', 'Moisture',
-        'Nitrogen', 'Phosphorus', 'Potassium',
-        'Iron', 'Manganese', 'Copper', 'Zinc', 'Boron', 'Sulphur',
-        'Category', 'Notes',
-        'Observed EC', 'EC Temp', 'EC Comp Factor',
-        'N Burette A', 'N Burette B',
-        'Abs P', 'Abs K', 'Abs OC', 'Abs B', 'Abs S',
-        'Abs Zn', 'Abs Fe', 'Abs Mn', 'Abs Cu'
-    ])
+    writer.writerow(_export_headers())
     for s in samples:
-        writer.writerow([
-            s.sample_id, s.village, s.sample_type,
-            s.farmer_name, s.collection_date,
-            s.ph, s.ec, s.organic_carbon, s.temperature, s.moisture,
-            s.nitrogen, s.phosphorus, s.potassium,
-            s.iron, s.manganese, s.copper, s.zinc, s.boron, s.sulphur,
-            s.category, s.notes,
-            s.observed_ec, s.ec_temperature, s.ec_comp_factor,
-            s.n_burette_a, s.n_burette_b,
-            s.abs_phosphorus, s.abs_potassium, s.abs_organic_carbon,
-            s.abs_boron, s.abs_sulphur, s.abs_zinc,
-            s.abs_iron, s.abs_manganese, s.abs_copper
-        ])
+        writer.writerow(_export_row(s))
     output.seek(0)
     filename = f'soiltrack_selected_{len(samples)}_samples.csv'
     return Response(output, mimetype='text/csv',
@@ -613,12 +546,16 @@ def update_dilution_factors():
 @app.route('/lab-calculation')
 @staff_or_admin_required
 def lab_calculation():
-    return render_template('lab_calculation.html')
+    return render_template('lab_calculation.html', units=PARAMETER_UNITS)
 
 # ── API Routes ──
 @app.route('/api/factors')
 def api_factors():
     return jsonify(get_factors_dict())
+
+@app.route('/api/units')
+def api_units():
+    return jsonify(PARAMETER_UNITS)
 
 # ── UPDATED: returns ALL fields for auto-fill ──
 @app.route('/api/sample-by-id/<sample_id>')
@@ -633,8 +570,11 @@ def api_sample_by_id(sample_id):
         'village':         sample.village,
         'sample_type':     sample.sample_type,
         'collection_date': sample.collection_date,
-        'temperature':     sample.temperature,
-        'moisture':        sample.moisture,
+        'phone_number':    sample.phone_number,
+        'address':         sample.address,
+        'survey_number':   sample.survey_number,
+        'sample_source':   sample.sample_source,
+        'scheme':          sample.scheme,
         # Step 2
         'ph':              sample.ph,
         'observed_ec':     sample.observed_ec,
@@ -667,56 +607,66 @@ def api_sample_by_id(sample_id):
         'copper':          sample.copper,
         # Step 7
         'notes':           sample.notes,
+        # Sign-off
+        'analyzed_by':     sample.analyzed_by,
+        'checked_by':      sample.checked_by,
+        'approved_by':     sample.approved_by,
     })
 
 @app.route('/api/save-sample', methods=['POST'])
 def api_save_sample():
+    """
+    Kept for the Lab Calculation wizard's own save path
+    (chemistry parameters only — basic info is set at /add time).
+    """
     data = request.get_json()
-    village = data.get('village', 'Unknown')
+    sample_id = data.get('sample_id')
+    sample = Sample.query.filter_by(sample_id=sample_id).first() if sample_id else None
+
     ph = data.get('ph')
     nitrogen = data.get('nitrogen')
     phosphorus = data.get('phosphorus')
     potassium = data.get('potassium')
 
-    new_sample = Sample(
-        sample_id          = generate_sample_id(village),
-        village            = village,
-        sample_type        = data.get('sample_type'),
-        farmer_name        = data.get('farmer_name'),
-        collection_date    = data.get('collection_date'),
-        ph                 = ph,
-        ec                 = data.get('ec'),
-        nitrogen           = nitrogen,
-        phosphorus         = phosphorus,
-        potassium          = potassium,
-        iron               = data.get('iron'),
-        manganese          = data.get('manganese'),
-        copper             = data.get('copper'),
-        zinc               = data.get('zinc'),
-        boron              = data.get('boron'),
-        organic_carbon     = data.get('organic_carbon'),
-        sulphur            = data.get('sulphur'),
-        temperature        = data.get('temperature'),
-        moisture           = data.get('moisture'),
-        observed_ec        = data.get('observed_ec'),
-        ec_temperature     = data.get('ec_temperature'),
-        n_burette_a        = data.get('n_burette_a'),
-        n_burette_b        = data.get('n_burette_b'),
-        abs_phosphorus     = data.get('abs_phosphorus'),
-        abs_potassium      = data.get('abs_potassium'),
-        abs_organic_carbon = data.get('abs_organic_carbon'),
-        abs_boron          = data.get('abs_boron'),
-        abs_sulphur        = data.get('abs_sulphur'),
-        abs_zinc           = data.get('abs_zinc'),
-        abs_iron           = data.get('abs_iron'),
-        abs_manganese      = data.get('abs_manganese'),
-        abs_copper         = data.get('abs_copper'),
-        notes              = data.get('notes'),
-        category           = get_category(ph, nitrogen, phosphorus, potassium)
-    )
-    db.session.add(new_sample)
+    if not sample:
+        # Fallback: create a bare sample if none exists (shouldn't normally happen
+        # since registration now happens via /add first)
+        village = data.get('village', 'Unknown')
+        sample = Sample(sample_id=generate_sample_id(village), village=village)
+        db.session.add(sample)
+
+    sample.ph                 = ph
+    sample.ec                 = data.get('ec')
+    sample.nitrogen           = nitrogen
+    sample.phosphorus         = phosphorus
+    sample.potassium          = potassium
+    sample.iron               = data.get('iron')
+    sample.manganese          = data.get('manganese')
+    sample.copper             = data.get('copper')
+    sample.zinc               = data.get('zinc')
+    sample.boron              = data.get('boron')
+    sample.organic_carbon     = data.get('organic_carbon')
+    sample.sulphur             = data.get('sulphur')
+    sample.observed_ec        = data.get('observed_ec')
+    sample.ec_temperature     = data.get('ec_temperature')
+    sample.n_burette_a        = data.get('n_burette_a')
+    sample.n_burette_b        = data.get('n_burette_b')
+    sample.abs_phosphorus     = data.get('abs_phosphorus')
+    sample.abs_potassium      = data.get('abs_potassium')
+    sample.abs_organic_carbon = data.get('abs_organic_carbon')
+    sample.abs_boron          = data.get('abs_boron')
+    sample.abs_sulphur        = data.get('abs_sulphur')
+    sample.abs_zinc           = data.get('abs_zinc')
+    sample.abs_iron           = data.get('abs_iron')
+    sample.abs_manganese      = data.get('abs_manganese')
+    sample.abs_copper         = data.get('abs_copper')
+    sample.notes              = data.get('notes') or sample.notes
+    sample.analyzed_by        = data.get('analyzed_by') or sample.analyzed_by
+    sample.checked_by         = data.get('checked_by') or sample.checked_by
+    sample.approved_by        = data.get('approved_by') or sample.approved_by
+    sample.category = get_category(ph, nitrogen, phosphorus, potassium)
     db.session.commit()
-    return jsonify({'success': True, 'sample_id': new_sample.sample_id})
+    return jsonify({'success': True, 'sample_id': sample.sample_id})
 
 @app.route('/api/update-sample/<sample_id>', methods=['POST'])
 def api_update_sample(sample_id):
@@ -753,9 +703,15 @@ def api_update_sample(sample_id):
     sample.village            = data.get('village') or sample.village
     sample.sample_type        = data.get('sample_type') or sample.sample_type
     sample.collection_date    = data.get('collection_date') or sample.collection_date
-    sample.temperature        = data.get('temperature') or sample.temperature
-    sample.moisture           = data.get('moisture') or sample.moisture
+    sample.phone_number       = data.get('phone_number') or sample.phone_number
+    sample.address            = data.get('address') or sample.address
+    sample.survey_number      = data.get('survey_number') or sample.survey_number
+    sample.sample_source      = data.get('sample_source') or sample.sample_source
+    sample.scheme             = data.get('scheme') or sample.scheme
     sample.notes              = data.get('notes') or sample.notes
+    sample.analyzed_by        = data.get('analyzed_by') or sample.analyzed_by
+    sample.checked_by         = data.get('checked_by') or sample.checked_by
+    sample.approved_by        = data.get('approved_by') or sample.approved_by
     sample.category = get_category(sample.ph, sample.nitrogen, sample.phosphorus, sample.potassium)
     db.session.commit()
     return jsonify({'success': True, 'sample_id': sample.sample_id})
@@ -767,7 +723,7 @@ def soil_health_card(id):
     sample = db.session.get(Sample, id)
     if not sample:
         return redirect(url_for('all_samples'))
-    return render_template('soil_health_card.html', sample=sample)
+    return render_template('soil_health_card.html', sample=sample, units=PARAMETER_UNITS)
 
 # ── Users ──
 @app.route('/users')
