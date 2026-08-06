@@ -56,6 +56,13 @@ with app.app_context():
     except Exception as e:
         print("Database schema init notice:", e)
 
+@app.errorhandler(500)
+def internal_server_error(e):
+    import traceback
+    error_trace = traceback.format_exc()
+    print("500 INTERNAL SERVER ERROR TRACEBACK:\n", error_trace)
+    return f"<div style='font-family:monospace;padding:30px;'><h3>500 Internal Server Error</h3><pre>{error_trace}</pre></div>", 500
+
 ROLE_LABELS = {
     'chemist': 'Chemist',
     'hod': 'HOD (Head of Dept.)',
