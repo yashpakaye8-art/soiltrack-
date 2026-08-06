@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, Response, flash, jsonify, session, get_flashed_messages
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import or_, and_, desc, func
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
@@ -634,10 +635,10 @@ def seed_admin_account():
 def dashboard():
     total = Sample.query.count()
     govt_count = Sample.query.filter(
-        db.or_(Sample.sample_source == 'govt', Sample.sample_type == 'Government')
+        or_(Sample.sample_source == 'govt', Sample.sample_type == 'Government')
     ).count()
     pvt_count = Sample.query.filter(
-        db.or_(Sample.sample_source == 'private', Sample.sample_type == 'Private', Sample.sample_source == None)
+        or_(Sample.sample_source == 'private', Sample.sample_type == 'Private', Sample.sample_source == None)
     ).count()
     recent = Sample.query.order_by(Sample.id.desc()).limit(8).all()
 
