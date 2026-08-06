@@ -26,14 +26,34 @@ app.secret_key = secret_key
 csrf = CSRFProtect(app)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = (
-    f"mysql+pymysql://{os.getenv('MYSQL_USER', 'root')}:"
-    f"{os.getenv('MYSQL_PASSWORD', '')}@"
-    f"{os.getenv('MYSQL_HOST', 'localhost')}/"
-    f"{os.getenv('MYSQL_DB', 'soiltrack_db')}"
-)
+# Database Configuration (Supports Cloud MySQL, Railway, Render, PythonAnywhere & SQLite fallback)
+db_url = os.getenv('DATABASE_URL') or os.getenv('JAWSDB_URL') or os.getenv('CLEARDB_DATABASE_URL')
+if not db_url:
+    mysql_user = os.getenv('MYSQL_USER')
+    mysql_host = os.getenv('MYSQL_HOST')
+    if mysql_user and mysql_host:
+        db_url = (
+            f"mysql+pymysql://{mysql_user}:"
+            f"{os.getenv('MYSQL_PASSWORD', '')}@"
+            f"{mysql_host}/"
+            f"{os.getenv('MYSQL_DB', 'soiltrack_db')}"
+        )
+    else:
+        # Fallback to lightweight SQLite database for cloud hosting if no MySQL env is set
+        db_url = f"sqlite:///{os.path.join(app.root_path, 'soiltrack.db')}"
+
+if db_url.startswith("mysql://"):
+    db_url = db_url.replace("mysql://", "mysql+pymysql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
+with app.app_context():
+    try:
+        db.create_all()
+    except Exception as e:
+        print("Database schema init notice:", e)
 
 ROLE_LABELS = {
     'chemist': 'Chemist',
