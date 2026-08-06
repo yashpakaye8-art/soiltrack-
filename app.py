@@ -50,12 +50,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-with app.app_context():
-    try:
-        db.create_all()
-    except Exception as e:
-        print("Database schema init notice:", e)
-
 @app.errorhandler(500)
 def internal_server_error(e):
     import traceback
@@ -635,6 +629,17 @@ def seed_admin_account():
             role='admin'
         ))
         db.session.commit()
+
+def init_db_tables():
+    with app.app_context():
+        try:
+            db.create_all()
+            seed_dilution_factors()
+            seed_admin_account()
+        except Exception as e:
+            print("Database initialization notice:", e)
+
+init_db_tables()
 
 # ── Dashboard ──
 @app.route('/')
