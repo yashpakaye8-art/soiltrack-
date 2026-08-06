@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bulk Import Soil Samples — SoilTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #F4F1EB; font-family: 'Segoe UI', sans-serif; }
+        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; z-index: 1000; transition: transform 0.25s ease; }
+        .sidebar .logo { color: #fff; font-size: 20px; font-weight: 700; padding: 10px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px; }
+        .sidebar .logo span { font-size: 12px; display: block; font-weight: 400; opacity: 0.7; margin-top: 2px; }
+        .sidebar a { color: rgba(255,255,255,0.85); text-decoration: none; display: block; padding: 10px 20px; font-size: 14px; transition: all 0.15s; }
+        .sidebar a:hover { background-color: #3A6B4A; color: #fff; }
+        .sidebar a.active { background-color: #3A6B4A; color: #fff; font-weight: 600; }
+        .sidebar .nav-section { color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 15px 20px 5px; }
+        .sidebar-bottom { position: absolute; bottom: 0; width: 100%; border-top: 1px solid rgba(255,255,255,0.2); padding: 10px 0; }
+        .main-content { margin-left: 220px; padding: 30px; }
+        .topbar { background: white; padding: 12px 20px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; display: flex; align-items: center; gap: 10px; }
+        .card { border: 1px solid #DDD9CF; border-radius: 14px; background: white; padding: 28px; }
+
+        /* Dropzone styling */
+        .dropzone {
+            border: 2px dashed #4A7C59;
+            border-radius: 14px;
+            background: #F9FAF8;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .dropzone:hover, .dropzone.dragover {
+            background: #EEF5F0;
+            border-color: #3A6B4A;
+            transform: scale(1.005);
+        }
+        .dropzone-icon { font-size: 48px; color: #4A7C59; margin-bottom: 12px; }
+        .dropzone-title { font-size: 17px; font-weight: 700; color: #1A1814; margin-bottom: 6px; }
+        .dropzone-sub { font-size: 13px; color: #6C757D; margin-bottom: 16px; }
+        
+        .file-info-preview {
+            display: none;
+            background: #E6F2EA;
+            border: 1px solid #B8D4BE;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-top: 20px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .hamburger-btn { display: none; background: none; border: none; font-size: 22px; color: #1A1814; cursor: pointer; padding: 0; line-height: 1; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 999; }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); box-shadow: 4px 0 24px rgba(0,0,0,0.25); }
+            .sidebar.show { transform: translateX(0); }
+            .sidebar-overlay.show { display: block; }
+            .main-content, .topbar { margin-left: 0 !important; }
+            .topbar { padding: 10px 14px; }
+            .topbar-title { font-size: 15px; }
+            .hamburger-btn { display: inline-flex; align-items: center; }
+            .main-content { padding: 16px; }
+            .card { padding: 18px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Overlay (mobile only) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+    <div class="logo">🌱 SoilTrack<span>Chemistry Department</span></div>
+    <div class="nav-section">Main</div>
+    <a href="/">📊 Dashboard</a>
+    <a href="/samples">📋 All Samples</a>
+    <a href="/add">➕ Add Sample</a>
+    <a href="/bulk-add" class="active">📁 Bulk Import</a>
+    <a href="/lab-calculation">🧪 Lab Calculation</a>
+    <div class="nav-section">Settings</div>
+    <a href="/multiplication-factors">⚗️ Multiplication Factors</a>
+    <div class="nav-section">Export</div>
+    <a href="/export">⬇ Export to Excel</a>
+    {% if session.get('role') == 'admin' %}
+    <div class="nav-section">Admin</div>
+    <a href="/users">👥 User Management</a>
+    {% endif %}
+    <div class="sidebar-bottom">
+        <div class="nav-section">Account</div>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+</div>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div class="topbar-title">
+        <button class="hamburger-btn" onclick="openSidebar()" aria-label="Open menu">☰</button>
+        📁 Bulk Excel / CSV Import
+    </div>
+    <a href="/download-import-template" class="btn btn-sm btn-outline-success fw-bold" style="border-radius:8px">
+        ⬇ Download Template (.CSV)
+    </a>
+</div>
+
+<div class="main-content">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ 'danger' if category in ['error', 'danger'] else 'success' }} alert-dismissible fade show" role="alert">
+                    {{ '✅' if category == 'success' else '⚠' }} {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <div class="card shadow-sm mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-1">Import Multiple Soil Samples</h5>
+                        <p class="text-secondary small mb-0">Upload an Excel (.xlsx) or CSV file containing 1 to 2,000+ soil samples. Sample IDs will be generated automatically.</p>
+                    </div>
+                </div>
+
+                <form method="POST" action="/bulk-add" enctype="multipart/form-data" id="bulkForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                    <!-- Drag & Drop Zone -->
+                    <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+                        <div class="dropzone-icon">📊</div>
+                        <div class="dropzone-title">Drag & Drop your Excel (.xlsx) or CSV file here</div>
+                        <div class="dropzone-sub">or click to browse from your computer</div>
+                        <span class="btn btn-sm btn-success fw-semibold px-3 py-1" style="background:#4A7C59;border:none">Browse File</span>
+                        <input type="file" name="file" id="fileInput" accept=".csv, .xlsx, .xls" style="display:none" onchange="handleFileSelected(this.files)">
+                    </div>
+
+                    <!-- Selected File Preview Card -->
+                    <div class="file-info-preview" id="filePreview">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="fs-2 text-success">📄</div>
+                            <div>
+                                <div class="fw-bold text-dark" id="fileName">sample_list.csv</div>
+                                <div class="text-muted small" id="fileSize">0 KB</div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" onclick="clearSelectedFile()"></button>
+                    </div>
+
+                    <div class="mt-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <a href="/download-import-template" class="text-decoration-none text-success small fw-semibold">
+                            💡 Need help? Download the Sample Template
+                        </a>
+                        <button type="submit" id="btnSubmit" class="btn text-white fw-bold px-4 py-2" style="background:#4A7C59; border-radius:10px" disabled>
+                            🌱 Start Bulk Import
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Guidelines Box -->
+            <div class="card shadow-sm border-0 bg-white" style="border-left: 4px solid #4A7C59 !important;">
+                <h6 class="fw-bold text-dark mb-2">📋 Instructions & Formatting Guidelines</h6>
+                <ul class="text-secondary small mb-0 ps-3">
+                    <li class="mb-1"><strong>Supported Files:</strong> Microsoft Excel (<code>.xlsx</code>) and Comma-Separated Values (<code>.csv</code>).</li>
+                    <li class="mb-1"><strong>Required Header Column:</strong> <code>village</code> (or <code>village_name</code>).</li>
+                    <li class="mb-1"><strong>Optional Header Columns:</strong> <code>farmer_name</code>, <code>phone_number</code>, <code>address</code>, <code>survey_number</code>, <code>sample_source</code> (<code>govt</code> or <code>private</code>), <code>scheme</code>, <code>crop</code>, <code>testing_fee</code>, <code>collection_date</code>.</li>
+                    <li><strong>Automatic Sample ID:</strong> SoilTrack auto-assigns village-based sequential Sample IDs (e.g. <code>RAT-01</code>, <code>RAT-02</code>) for all imported rows.</li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('show');
+    document.getElementById('sidebarOverlay').classList.add('show');
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('show');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+}
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const filePreview = document.getElementById('filePreview');
+const fileName = document.getElementById('fileName');
+const fileSize = document.getElementById('fileSize');
+const btnSubmit = document.getElementById('btnSubmit');
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add('dragover');
+    }, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('dragover');
+    }, false);
+});
+
+dropzone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    if (files.length > 0) {
+        fileInput.files = files;
+        handleFileSelected(files);
+    }
+});
+
+function handleFileSelected(files) {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    fileName.textContent = file.name;
+    fileSize.textContent = (file.size / 1024).toFixed(1) + ' KB';
+    filePreview.style.display = 'flex';
+    btnSubmit.disabled = false;
+}
+
+function clearSelectedFile() {
+    fileInput.value = '';
+    filePreview.style.display = 'none';
+    btnSubmit.disabled = true;
+}
+
+document.getElementById('bulkForm').addEventListener('submit', function() {
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '⏳ Importing Samples... Please wait';
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

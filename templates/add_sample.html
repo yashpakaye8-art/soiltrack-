@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #F4F1EB; font-family: 'Segoe UI', sans-serif; }
-        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; }
+        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; z-index: 1000; transition: transform 0.25s ease; }
         .sidebar .logo { color: #fff; font-size: 20px; font-weight: 700; padding: 10px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px; }
         .sidebar .logo span { font-size: 12px; display: block; font-weight: 400; opacity: 0.7; margin-top: 2px; }
         .sidebar a { color: rgba(255,255,255,0.85); text-decoration: none; display: block; padding: 10px 20px; font-size: 14px; transition: all 0.15s; }
@@ -17,42 +17,119 @@
         .sidebar-bottom { position: absolute; bottom: 0; width: 100%; border-top: 1px solid rgba(255,255,255,0.2); padding: 10px 0; }
         .main-content { margin-left: 220px; padding: 30px; }
         .topbar { background: white; padding: 15px 30px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
-        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; }
+        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; display: flex; align-items: center; gap: 10px; }
         .card { border: 1px solid #DDD9CF; border-radius: 12px; background: white; padding: 24px; max-width: 800px; }
         .section-title { font-size: 11px; font-weight: 700; color: #9A9485; text-transform: uppercase; letter-spacing: 0.8px; padding-bottom: 10px; border-bottom: 1px solid #DDD9CF; margin-bottom: 16px; margin-top: 24px; }
         label { font-size: 12px; font-weight: 700; color: #5C5849; margin-bottom: 4px; display: block; }
         input, select { font-size: 13px; border: 1px solid #CEC8BE; border-radius: 8px; padding: 8px 11px; width: 100%; outline: none; transition: border-color 0.15s; background: white; }
         input:focus, select:focus { border-color: #4A7C59; box-shadow: 0 0 0 3px rgba(74,124,89,0.1); }
         .hint { font-size: 11px; color: #9A9485; margin-top: 3px; }
-        .id-preview { background: #E6F2EA; border: 1px solid #BCD8C4; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; }
-        .id-preview-label { font-size: 10px; font-weight: 700; color: #2D5A3D; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
-        .id-preview-val { font-family: monospace; font-size: 18px; font-weight: 700; color: #2D5A3D; }
+        .id-preview { background: #E6F2EA; border: 1px solid #BCD8C4; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; overflow-x: auto; }
+        .id-preview-label { font-size: 10px; font-weight: 700; color: #2D5A3D; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; white-space: nowrap; }
+        .id-preview-val { font-family: monospace; font-size: 18px; font-weight: 700; color: #2D5A3D; white-space: nowrap; }
         .btn-save { background: #4A7C59; color: white; border: none; border-radius: 8px; padding: 10px 24px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
         .btn-save:hover { background: #3A6B4A; }
         .btn-cancel { background: white; color: #5C5849; border: 1px solid #CEC8BE; border-radius: 8px; padding: 10px 24px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; }
 
         /* Year toggle styles */
-        .date-toggle { display: flex; gap: 6px; margin-bottom: 8px; }
-        .toggle-btn { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 6px; border: 1.5px solid #CEC8BE; background: white; color: #9A9485; cursor: pointer; transition: all 0.15s; }
+        .date-toggle { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+        .toggle-btn { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 6px; border: 1.5px solid #CEC8BE; background: white; color: #9A9485; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
         .toggle-btn.active { background: #4A7C59; color: white; border-color: #4A7C59; }
+
+        /* ── Hamburger button: hidden on desktop, shown on mobile ── */
+        .hamburger-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 22px;
+            line-height: 1;
+            color: #1A1814;
+            cursor: pointer;
+            padding: 4px 6px;
+        }
+
+        /* ── Overlay behind the drawer, closes it on tap ── */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 999;
+        }
+        .sidebar-overlay.show { display: block; }
+
+        /* ══════════════════ MOBILE BREAKPOINT ══════════════════ */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);   /* hidden off-screen by default */
+                box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+            }
+            .sidebar.show {
+                transform: translateX(0);       /* slides in when toggled */
+            }
+            .main-content,
+            .topbar {
+                margin-left: 0 !important;      /* content takes full width — this is the actual fix */
+            }
+            .topbar {
+                padding: 14px 16px;
+            }
+            .hamburger-btn {
+                display: inline-flex;
+                align-items: center;
+            }
+            .main-content {
+                padding: 16px;
+            }
+            .card {
+                padding: 16px;
+                max-width: 100%;
+            }
+            .date-toggle { gap: 4px; margin-bottom: 6px; }
+            .toggle-btn { padding: 5px 8px; font-size: 10px; width: 48%; text-align: center; }
+            #private-tests-wrapper { padding: 12px; }
+            .btn-save, .btn-cancel {
+                width: 100% !important;
+                display: block !important;
+                text-align: center !important;
+                margin-bottom: 8px !important;
+            }
+        }
     </style>
 </head>
 <body>
-<div class="sidebar">
+
+<!-- Overlay (mobile only, closes drawer on tap) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<div class="sidebar" id="sidebar">
     <div class="logo">🌱 SoilTrack<span>Chemistry Department</span></div>
     <div class="nav-section">Main</div>
     <a href="/">📊 Dashboard</a>
-    <a href="/samples">📋 All Samples</a>
     <a href="/add" class="active">➕ Add Sample</a>
+    <a href="/bulk-add">📁 Bulk Import</a>
+    <a href="/lab-calculation">🧪 Lab Calculation</a>
+    <div class="nav-section">Settings</div>
+    <a href="/multiplication-factors">⚗️ Multiplication Factors</a>
     <div class="nav-section">Export</div>
     <a href="/export">⬇ Export to Excel</a>
+    {% if session.get('role') == 'admin' %}
+    <div class="nav-section">Admin</div>
+    <a href="/users">👥 User Management</a>
+    {% endif %}
     <div class="sidebar-bottom">
         <div class="nav-section">Account</div>
         <a href="/logout">🚪 Logout</a>
     </div>
 </div>
 <div class="topbar">
-    <div class="topbar-title">Add New Sample</div>
+    <div class="topbar-title">
+        <button class="hamburger-btn" onclick="openSidebar()" aria-label="Open menu">☰</button>
+        Add New Sample
+    </div>
+    <a href="/bulk-add" class="btn btn-sm text-white fw-bold" style="background:#4A7C59;border-radius:8px;padding:6px 14px;font-size:12.5px;text-decoration:none">
+        📁 Bulk Excel Import
+    </a>
 </div>
 <div class="main-content">
     <div class="card">
@@ -61,6 +138,7 @@
             <div class="id-preview-val" id="id-preview">???-01</div>
         </div>
         <form method="POST" action="/add">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <div class="section-title">Location & Owner Info</div>
             <div class="row g-3">
                 <div class="col-md-6">
@@ -75,7 +153,7 @@
                     </select>
                 </div>
                 <div class="col-md-6" id="scheme-wrapper" style="display:none;">
-                    <label>Scheme</label>
+                    <label>Scheme Name</label>
                     <input type="text" name="scheme" list="scheme-options" placeholder="Select or type a scheme name">
                     <datalist id="scheme-options">
                         <option value="PM-KISAN">
@@ -85,6 +163,118 @@
                         <option value="Paramparagat Krishi Vikas Yojana">
                     </datalist>
                     <div class="hint">Pick a common scheme or type a new one</div>
+                </div>
+                <div class="col-md-6">
+                    <label>Crop / Crop Stage Field</label>
+                    <select name="crop" id="crop-select">
+                        <option value="">-- Select Crop Field --</option>
+                        <optgroup label="🌾 CEREALS">
+                            <option value="Paddy">Paddy</option>
+                            <option value="Paddy (Hybrid)">Paddy (Hybrid)</option>
+                            <option value="Nachani">Nachani</option>
+                        </optgroup>
+                        <optgroup label="🫘 PULSES">
+                            <option value="Cow Pea">Cow Pea</option>
+                        </optgroup>
+                        <optgroup label="🥦 VEGETABLES">
+                            <option value="Brinjal">Brinjal</option>
+                            <option value="Chilli">Chilli</option>
+                            <option value="Okra">Okra</option>
+                            <option value="Ridge Gourd">Ridge Gourd</option>
+                            <option value="Cabbage">Cabbage</option>
+                            <option value="Bitter Gourd">Bitter Gourd</option>
+                        </optgroup>
+                        <optgroup label="🥭 FRUIT CROPS - MANGO">
+                            <option value="Mango (1st year)">Mango (1st year)</option>
+                            <option value="Mango (2nd year)">Mango (2nd year)</option>
+                            <option value="Mango (3rd year)">Mango (3rd year)</option>
+                            <option value="Mango (4th year)">Mango (4th year)</option>
+                            <option value="Mango (5th year)">Mango (5th year)</option>
+                            <option value="Mango (6th year)">Mango (6th year)</option>
+                            <option value="Mango (7th year)">Mango (7th year)</option>
+                            <option value="Mango (8th year)">Mango (8th year)</option>
+                            <option value="Mango (9th year)">Mango (9th year)</option>
+                            <option value="Mango (10th year onward)">Mango (10th year onward)</option>
+                        </optgroup>
+                        <optgroup label="🥜 FRUIT CROPS - CASHEW">
+                            <option value="Cashew (1st year)">Cashew (1st year)</option>
+                            <option value="Cashew (2nd year)">Cashew (2nd year)</option>
+                            <option value="Cashew (3rd year)">Cashew (3rd year)</option>
+                            <option value="Cashew (4th year Onwards)">Cashew (4th year Onwards)</option>
+                        </optgroup>
+                        <optgroup label="🥥 FRUIT CROPS - COCONUT">
+                            <option value="Coconut (1st year)">Coconut (1st year)</option>
+                            <option value="Coconut (2nd year)">Coconut (2nd year)</option>
+                            <option value="Coconut (3rd year)">Coconut (3rd year)</option>
+                            <option value="Coconut (4th year)">Coconut (4th year)</option>
+                            <option value="Coconut (5th year Onwards)">Coconut (5th year Onwards)</option>
+                            <option value="Coconut Hybrid (1st year)">Coconut Hybrid (1st year)</option>
+                            <option value="Coconut Hybrid (2nd year)">Coconut Hybrid (2nd year)</option>
+                            <option value="Coconut Hybrid (3rd year)">Coconut Hybrid (3rd year)</option>
+                            <option value="Coconut Hybrid (4th year)">Coconut Hybrid (4th year)</option>
+                            <option value="Coconut Hybrid (5th year Onwards)">Coconut Hybrid (5th year Onwards)</option>
+                        </optgroup>
+                        <optgroup label="🍈 FRUIT CROPS - CHIKKU">
+                            <option value="Chikku (1st year)">Chikku (1st year)</option>
+                            <option value="Chikku (2nd year)">Chikku (2nd year)</option>
+                            <option value="Chikku (3rd year)">Chikku (3rd year)</option>
+                            <option value="Chikku (4th year)">Chikku (4th year)</option>
+                            <option value="Chikku (5th year)">Chikku (5th year)</option>
+                            <option value="Chikku (6th year)">Chikku (6th year)</option>
+                            <option value="Chikku (7th year)">Chikku (7th year)</option>
+                            <option value="Chikku (8th year)">Chikku (8th year)</option>
+                            <option value="Chikku (9th year)">Chikku (9th year)</option>
+                            <option value="Chikku (10th year)">Chikku (10th year)</option>
+                            <option value="Chikku (11th year)">Chikku (11th year)</option>
+                            <option value="Chikku (12th year)">Chikku (12th year)</option>
+                            <option value="Chikku (13th year)">Chikku (13th year)</option>
+                            <option value="Chikku (14th year)">Chikku (14th year)</option>
+                            <option value="Chikku (15th year)">Chikku (15th year)</option>
+                            <option value="Chikku (16th year)">Chikku (16th year)</option>
+                            <option value="Chikku (17th year)">Chikku (17th year)</option>
+                            <option value="Chikku (18th year)">Chikku (18th year)</option>
+                            <option value="Chikku (19th year)">Chikku (19th year)</option>
+                            <option value="Chikku (20th year Onwards)">Chikku (20th year Onwards)</option>
+                        </optgroup>
+                        <optgroup label="🌴 OTHER FRUIT CROPS & SPICES">
+                            <option value="Arecanut (1st year)">Arecanut (1st year)</option>
+                            <option value="Arecanut (2nd year)">Arecanut (2nd year)</option>
+                            <option value="Arecanut (3rd year Onwards)">Arecanut (3rd year Onwards)</option>
+                            <option value="Black Pepper (1st year)">Black Pepper (1st year)</option>
+                            <option value="Black Pepper (2nd year)">Black Pepper (2nd year)</option>
+                            <option value="Black Pepper (3rd year Onwards)">Black Pepper (3rd year Onwards)</option>
+                            <option value="Nutmeg (1st year)">Nutmeg (1st year)</option>
+                            <option value="Nutmeg (2nd year)">Nutmeg (2nd year)</option>
+                            <option value="Nutmeg (3rd year)">Nutmeg (3rd year)</option>
+                            <option value="Nutmeg (4th year)">Nutmeg (4th year)</option>
+                            <option value="Nutmeg (5th year)">Nutmeg (5th year)</option>
+                            <option value="Nutmeg (6th year)">Nutmeg (6th year)</option>
+                            <option value="Nutmeg (7th year)">Nutmeg (7th year)</option>
+                            <option value="Nutmeg (8th year)">Nutmeg (8th year)</option>
+                            <option value="Nutmeg (9th year)">Nutmeg (9th year)</option>
+                            <option value="Nutmeg (10th year onward)">Nutmeg (10th year onward)</option>
+                            <option value="Cinnamon (1st year)">Cinnamon (1st year)</option>
+                            <option value="Cinnamon (2nd year)">Cinnamon (2nd year)</option>
+                            <option value="Cinnamon (3rd year)">Cinnamon (3rd year)</option>
+                            <option value="Cinnamon (4th year)">Cinnamon (4th year)</option>
+                            <option value="Cinnamon (5th year)">Cinnamon (5th year)</option>
+                            <option value="Cinnamon (6th year)">Cinnamon (6th year)</option>
+                            <option value="Cinnamon (7th year)">Cinnamon (7th year)</option>
+                            <option value="Cinnamon (8th year)">Cinnamon (8th year)</option>
+                            <option value="Cinnamon (9th year)">Cinnamon (9th year)</option>
+                            <option value="Cinnamon (10th year onward)">Cinnamon (10th year onward)</option>
+                            <option value="Kokum (1st year)">Kokum (1st year)</option>
+                            <option value="Kokum (2nd year)">Kokum (2nd year)</option>
+                            <option value="Kokum (3rd year)">Kokum (3rd year)</option>
+                            <option value="Kokum (4th year)">Kokum (4th year)</option>
+                            <option value="Kokum (5th year)">Kokum (5th year)</option>
+                            <option value="Kokum (6th year)">Kokum (6th year)</option>
+                            <option value="Kokum (7th year)">Kokum (7th year)</option>
+                            <option value="Kokum (8th year)">Kokum (8th year)</option>
+                            <option value="Kokum (9th year)">Kokum (9th year)</option>
+                            <option value="Kokum (10th year onward)">Kokum (10th year onward)</option>
+                        </optgroup>
+                    </select>
                 </div>
                 <div class="col-md-6">
                     <label>Farmer / Owner Name</label>
@@ -118,7 +308,30 @@
                 </div>
             </div>
 
-            <div style="margin-top:24px;display:flex;gap:10px">
+            <!-- PRIVATE SAMPLE TESTING & FEE SECTION -->
+            <div id="private-tests-wrapper" style="margin-top:24px; padding:18px; background:#F9F8F5; border:1px solid #E2DED6; border-radius:10px;">
+                <div class="section-title" style="margin-top:0; color:#2D5A3D;">💳 Private Sample Test & Rate Card Section</div>
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label>Select Test Package / Service</label>
+                        <select name="test_package" id="test-package-select" onchange="onTestPackageChange(this)">
+                            <option value="1. Basic Soil Test (pH, EC, Organic Carbon)" data-fee="250">1. Basic Soil Test (pH, EC, Organic Carbon) — ₹250</option>
+                            <option value="2. Major Nutrients Test (N, P, K)" data-fee="350">2. Major Nutrients Test (N, P, K) — ₹350</option>
+                            <option value="3. Complete Soil Test (pH, EC, OC, NPK)" data-fee="550" selected>3. Complete Soil Test (pH, EC, OC, NPK) — ₹550</option>
+                            <option value="4. Micronutrient Test (Zn, Fe, Mn, Cu)" data-fee="400">4. Micronutrient Test (Zn, Fe, Mn, Cu) — ₹400</option>
+                            <option value="5. Full Soil Health Report (Macro + Micro Nutrients)" data-fee="900">5. Full Soil Health Report (Macro + Micro Nutrients) — ₹900</option>
+                        </select>
+                        <div class="hint">Standard turn-around time: 3–5 Days</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label>Testing Fee (₹)</label>
+                        <input type="number" step="1" name="testing_fee" id="testing-fee-input" value="550" placeholder="e.g. 550">
+                        <div class="hint">Auto-calculated from rate card</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:24px;display:flex;gap:10px;flex-wrap:wrap">
                 <button type="submit" class="btn-save">Save Sample</button>
                 <a href="/samples" class="btn-cancel">Cancel</a>
             </div>
@@ -133,14 +346,29 @@ function updateID(village) {
 }
 
 function toggleScheme(sourceValue) {
-    const wrapper = document.getElementById('scheme-wrapper');
-    wrapper.style.display = (sourceValue === 'govt') ? '' : 'none';
+    const schemeWrapper = document.getElementById('scheme-wrapper');
+    const privateWrapper = document.getElementById('private-tests-wrapper');
+    if (sourceValue === 'govt') {
+        if (schemeWrapper) schemeWrapper.style.display = '';
+        if (privateWrapper) privateWrapper.style.display = 'none';
+    } else {
+        if (schemeWrapper) schemeWrapper.style.display = 'none';
+        if (privateWrapper) privateWrapper.style.display = '';
+    }
+}
+
+function onTestPackageChange(selectElem) {
+    const selectedOption = selectElem.options[selectElem.selectedIndex];
+    const fee = selectedOption.getAttribute('data-fee');
+    if (fee !== null) {
+        document.getElementById('testing-fee-input').value = fee;
+    }
 }
 
 // Run once on page load in case browser restores a previous selection
 document.addEventListener('DOMContentLoaded', function () {
     const select = document.getElementById('sample-source-select');
-    toggleScheme(select.value);
+    if (select) toggleScheme(select.value);
 });
 
 let currentMode = 'year';
@@ -177,6 +405,18 @@ function formatYear(input) {
     }
     input.value = val;
 }
+
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('show');
+    document.getElementById('sidebarOverlay').classList.add('show');
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('show');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+}
+window.addEventListener('resize', function () {
+    if (window.innerWidth > 768) closeSidebar();
+});
 </script>
 </body>
 </html>

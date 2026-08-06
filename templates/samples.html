@@ -6,8 +6,9 @@
     <title>All Samples - SoilTrack</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        html, body { overflow-x: hidden; }
         body { background-color: #F4F1EB; font-family: 'Segoe UI', sans-serif; }
-        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; }
+        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; z-index: 1000; transition: transform 0.25s ease; }
         .sidebar .logo { color: #fff; font-size: 20px; font-weight: 700; padding: 10px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px; }
         .sidebar .logo span { font-size: 12px; display: block; font-weight: 400; opacity: 0.7; margin-top: 2px; }
         .sidebar a { color: rgba(255,255,255,0.85); text-decoration: none; display: block; padding: 10px 20px; font-size: 14px; transition: all 0.15s; }
@@ -16,8 +17,9 @@
         .sidebar .nav-section { color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 15px 20px 5px; }
         .sidebar-bottom { position: absolute; bottom: 0; width: 100%; border-top: 1px solid rgba(255,255,255,0.2); padding: 10px 0; }
         .main-content { margin-left: 220px; padding: 30px; padding-bottom: 90px; }
-        .topbar { background: white; padding: 15px 30px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
-        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; }
+        .main-content .row { margin-left: 0; margin-right: 0; }
+        .topbar { background: white; padding: 15px 30px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; display: flex; align-items: center; gap: 10px; }
         .card { border: 1px solid #DDD9CF; border-radius: 12px; background: white; overflow: hidden; }
         .badge-fertile { background-color: #E6F2EA; color: #2D5A3D; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
         .badge-moderate { background-color: #FDF4E3; color: #7A5010; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
@@ -25,13 +27,13 @@
         .badge-gov { background-color: #E8F0F9; color: #2A5080; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
         .badge-pvt { background-color: #F3EEFF; color: #5A2D9E; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
         .sample-id { font-family: monospace; font-size: 12px; background: #F4F1EB; border: 1px solid #DDD9CF; border-radius: 4px; padding: 2px 8px; }
-        table { width: 100%; }
+        table { width: 100%; min-width: 900px; }
         thead th { font-size: 11px; font-weight: 700; color: #9A9485; text-transform: uppercase; letter-spacing: 0.6px; padding: 10px 14px; border-bottom: 1px solid #DDD9CF; background: #FAFAF7; }
         tbody td { padding: 10px 14px; border-bottom: 1px solid #F4F1EB; font-size: 13px; vertical-align: middle; }
         tbody tr:last-child td { border-bottom: none; }
         tbody tr:hover td { background-color: #FAFAF7; }
         tbody tr.row-selected td { background-color: #EEF5F0; }
-        .search-bar { padding: 16px 20px; border-bottom: 1px solid #DDD9CF; display: flex; gap: 10px; align-items: center; }
+        .search-bar { padding: 16px 20px; border-bottom: 1px solid #DDD9CF; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .search-bar input { border: 1px solid #DDD9CF; border-radius: 8px; padding: 7px 12px; font-size: 13px; outline: none; width: 250px; }
         .search-bar input:focus { border-color: #4A7C59; }
         .search-bar select { border: 1px solid #DDD9CF; border-radius: 8px; padding: 7px 12px; font-size: 13px; outline: none; }
@@ -50,11 +52,196 @@
         .btn-export-selected:hover { background: #A87520; color: white; }
         .btn-clear-selection { background: transparent; color: rgba(255,255,255,0.7); border: 1.5px solid rgba(255,255,255,0.3); border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: 10px; }
         .btn-clear-selection:hover { background: rgba(255,255,255,0.1); color: white; }
+
+        /* ── Hamburger button: hidden on desktop, shown on mobile ── */
+        .hamburger-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 22px;
+            line-height: 1;
+            color: #1A1814;
+            cursor: pointer;
+            padding: 4px 6px;
+        }
+
+        /* ── Overlay behind the drawer, closes it on tap ── */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 999;
+        }
+        .sidebar-overlay.show { display: block; }
+
+        /* ══════════════════ MOBILE BREAKPOINT ══════════════════ */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content,
+            .topbar {
+                margin-left: 0 !important;
+            }
+            .topbar {
+                padding: 14px 16px;
+            }
+            .hamburger-btn {
+                display: inline-flex;
+                align-items: center;
+            }
+            .topbar > div:last-child a {
+                padding: 7px 10px !important;
+                font-size: 12px !important;
+            }
+            .main-content {
+                padding: 16px;
+                padding-bottom: 90px;
+            }
+
+            /* Search bar: stack filters full width instead of overflowing sideways */
+            .search-bar {
+                padding: 14px 16px;
+            }
+            .search-bar input,
+            .search-bar select {
+                width: 100%;
+            }
+
+            /* Export bar: full width on mobile, no longer offset by sidebar width */
+            .export-bar {
+                left: 0;
+                padding: 12px 16px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            /* ── Table becomes stacked cards on mobile, laid out with CSS Grid ── */
+            thead {
+                display: none;
+            }
+            table {
+                min-width: 0;
+                width: 100%;
+            }
+
+            /* Each row is a named grid — this fixes the card layout predictably,
+               no line-break hacks needed like a flex version would require */
+            tbody tr {
+                display: grid;
+                grid-template-columns: auto 1fr 1fr auto;
+                grid-template-areas:
+                    "check id   id   type"
+                    "village village village village"
+                    "farmer farmer farmer farmer"
+                    "crop   crop   crop   crop"
+                    "ph     n      p      k"
+                    "action action action action";
+                column-gap: 10px;
+                row-gap: 4px;
+                border: 1px solid #DDD9CF;
+                border-radius: 14px;
+                margin-bottom: 12px;
+                padding: 14px 16px;
+                background: white;
+                box-shadow: 0 2px 8px rgba(26,24,20,0.05);
+                border-left: 4px solid #4A7C59;
+            }
+
+            tbody td {
+                padding: 3px 0;
+                font-size: 13px;
+                border: none !important;
+                display: block;
+            }
+
+            .cell-check {
+                grid-area: check;
+                display: flex;
+                align-items: center;
+            }
+            .cell-id {
+                grid-area: id;
+                display: flex;
+                align-items: center;
+            }
+            td[data-label="Type"] {
+                grid-area: type;
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+            }
+
+            td[data-label="Village"] { grid-area: village; padding-top: 6px; }
+            td[data-label="Farmer"]  { grid-area: farmer; }
+            td[data-label="Crop"]    {
+                grid-area: crop;
+                padding-bottom: 8px !important;
+                border-bottom: 1px solid #F4F1EB !important;
+            }
+            td[data-label="Village"]::before,
+            td[data-label="Farmer"]::before,
+            td[data-label="Crop"]::before {
+                content: attr(data-label) ": ";
+                font-size: 11px;
+                font-weight: 700;
+                color: #9A9485;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-right: 4px;
+            }
+            td[data-label="Type"]::before {
+                content: none;
+            }
+
+            .cell-year {
+                display: none !important;
+            }
+
+            td[data-label="pH"] { grid-area: ph; }
+            td[data-label="N"]  { grid-area: n; }
+            td[data-label="P"]  { grid-area: p; }
+            td[data-label="K"]  { grid-area: k; }
+
+            .cell-npk-item {
+                margin-top: 6px;
+                padding: 6px 4px !important;
+                background: #F4F1EB;
+                border-radius: 8px;
+                text-align: center;
+                font-size: 13px;
+                font-weight: 700;
+                color: #1A1814;
+            }
+            .cell-npk-item::before {
+                content: attr(data-label);
+                display: block;
+                font-size: 9.5px;
+                font-weight: 700;
+                color: #9A9485;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 2px;
+            }
+
+            .cell-action {
+                grid-area: action;
+                padding-top: 8px !important;
+            }
+        }
     </style>
 </head>
 <body>
 
-<div class="sidebar">
+<!-- Overlay (mobile only, closes drawer on tap) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<div class="sidebar" id="sidebar">
     <div class="logo">🌱 SoilTrack<span>Chemistry Department</span></div>
     <div class="nav-section">Main</div>
     <a href="/">📊 Dashboard</a>
@@ -62,9 +249,13 @@
     <a href="/add">➕ Add Sample</a>
     <a href="/lab-calculation">🧪 Lab Calculation</a>
     <div class="nav-section">Settings</div>
-    <a href="/dilution-factors">⚗️ Dilution Factors</a>
+    <a href="/multiplication-factors">⚗️ Multiplication Factors</a>
     <div class="nav-section">Export</div>
     <a href="/export">⬇ Export All to Excel</a>
+    {% if session.get('role') == 'admin' %}
+    <div class="nav-section">Admin</div>
+    <a href="/users">👥 User Management</a>
+    {% endif %}
     <div class="sidebar-bottom">
         <div class="nav-section">Account</div>
         <a href="/logout">🚪 Logout</a>
@@ -72,7 +263,10 @@
 </div>
 
 <div class="topbar">
-    <div class="topbar-title">All Samples</div>
+    <div class="topbar-title">
+        <button class="hamburger-btn" onclick="openSidebar()" aria-label="Open menu">☰</button>
+        All Samples
+    </div>
     <div style="display:flex;gap:10px">
         <a href="/export" class="btn btn-sm" style="background:white;color:#4A7C59;border:1px solid #4A7C59;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600">⬇ Export All</a>
         <a href="/add" class="btn btn-sm" style="background:#4A7C59;color:white;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600">+ Add Sample</a>
@@ -83,16 +277,10 @@
     <div class="card">
         <div class="search-bar">
             <input type="text" id="searchInput" placeholder="🔍 Search by ID, village, farmer..." onkeyup="filterTable()">
-            <select id="categoryFilter" onchange="filterTable()">
-                <option value="">All Categories</option>
-                <option value="Fertile">Fertile</option>
-                <option value="Moderate">Moderate</option>
-                <option value="Poor">Poor</option>
-            </select>
             <select id="typeFilter" onchange="filterTable()">
-                <option value="">All Types</option>
-                <option value="Government">Government</option>
-                <option value="Private">Private</option>
+                <option value="">All Source Types</option>
+                <option value="govt">Government</option>
+                <option value="private">Private</option>
             </select>
         </div>
         <div style="overflow-x:auto">
@@ -104,44 +292,38 @@
                         <th>Village</th>
                         <th>Type</th>
                         <th>Farmer</th>
+                        <th>Crop Field</th>
                         <th>Year</th>
                         <th>pH</th>
                         <th>N</th>
                         <th>P</th>
                         <th>K</th>
-                        <th>Category</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for sample in samples %}
-                    <tr data-type="{{ sample.sample_type }}" data-category="{{ sample.category }}">
-                        <td><input type="checkbox" class="row-check" value="{{ sample.id }}" onclick="updateSelection()"></td>
-                        <td><span class="sample-id">{{ sample.sample_id }}</span></td>
-                        <td>{{ sample.village }}</td>
-                        <td>
-                            {% if sample.sample_type == 'Government' %}
+                    <tr data-type="{{ sample.sample_source or sample.sample_type }}">
+                        <td class="cell-check"><input type="checkbox" class="row-check" value="{{ sample.id }}" onclick="updateSelection()"></td>
+                        <td data-label="Sample ID" class="cell-id"><span class="sample-id">{{ sample.sample_id }}</span></td>
+                        <td data-label="Village">{{ sample.village }}</td>
+                        <td data-label="Type">
+                            {% if (sample.sample_source or sample.sample_type) == 'govt' or (sample.sample_source or sample.sample_type) == 'Government' %}
                                 <span class="badge-gov">Govt</span>
                             {% else %}
                                 <span class="badge-pvt">Pvt</span>
                             {% endif %}
                         </td>
-                        <td>{{ sample.farmer_name }}</td>
-                        <td>{{ sample.collection_date }}</td>
-                        <td>{{ sample.ph }}</td>
-                        <td>{{ sample.nitrogen }}</td>
-                        <td>{{ sample.phosphorus }}</td>
-                        <td>{{ sample.potassium }}</td>
-                        <td>
-                            {% if sample.category == 'Fertile' %}
-                                <span class="badge-fertile">● Fertile</span>
-                            {% elif sample.category == 'Moderate' %}
-                                <span class="badge-moderate">● Moderate</span>
-                            {% else %}
-                                <span class="badge-poor">● Poor</span>
-                            {% endif %}
+                        <td data-label="Farmer">{{ sample.farmer_name or '—' }}</td>
+                        <td data-label="Crop">🌱 {{ sample.crop or '—' }}</td>
+                        <td data-label="Year" class="cell-year">{{ sample.collection_date or '—' }}</td>
+                        <td data-label="pH" class="cell-npk-item">{{ sample.ph or '—' }}</td>
+                        <td data-label="N" class="cell-npk-item">{{ sample.nitrogen or '—' }}</td>
+                        <td data-label="P" class="cell-npk-item">{{ sample.phosphorus or '—' }}</td>
+                        <td data-label="K" class="cell-npk-item">{{ sample.potassium or '—' }}</td>
+                        <td data-label="Action" class="cell-action">
+                            <a href="/sample/{{ sample.id }}" style="color:#4A7C59;font-weight:600;font-size:13px;text-decoration:none">View →</a>
                         </td>
-                        <td><a href="/sample/{{ sample.id }}" style="color:#4A7C59;font-weight:600;font-size:13px;text-decoration:none">View →</a></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -163,18 +345,22 @@
 <script>
 function filterTable() {
     const search = document.getElementById('searchInput').value.toLowerCase();
-    const category = document.getElementById('categoryFilter').value;
-    const type = document.getElementById('typeFilter').value;
+    const typeFilter = document.getElementById('typeFilter').value.toLowerCase();
     const rows = document.querySelectorAll('#samplesTable tbody tr');
     let visibleCount = 0;
     rows.forEach(row => {
         const text = row.innerText.toLowerCase();
-        const rowType = row.getAttribute('data-type');
-        const rowCategory = row.getAttribute('data-category');
+        const rawType = (row.getAttribute('data-type') || '').toLowerCase();
+        
+        let normalizedType = 'private';
+        if (rawType.includes('gov')) {
+            normalizedType = 'govt';
+        }
+        
         const matchSearch = search === '' || text.includes(search);
-        const matchCategory = category === '' || rowCategory === category;
-        const matchType = type === '' || rowType === type;
-        if (matchSearch && matchCategory && matchType) { row.style.display = ''; visibleCount++; }
+        const matchType = typeFilter === '' || normalizedType === typeFilter || rawType.includes(typeFilter);
+        
+        if (matchSearch && matchType) { row.style.display = ''; visibleCount++; }
         else { row.style.display = 'none'; }
     });
     document.getElementById('no-results').style.display = visibleCount === 0 ? 'block' : 'none';
@@ -204,6 +390,17 @@ function clearSelection() {
     document.getElementById('selectAll').checked = false;
     updateSelection();
 }
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('show');
+    document.getElementById('sidebarOverlay').classList.add('show');
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('show');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+}
+window.addEventListener('resize', function () {
+    if (window.innerWidth > 768) closeSidebar();
+});
 </script>
 </body>
 </html>

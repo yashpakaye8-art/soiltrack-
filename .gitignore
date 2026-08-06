@@ -34,3 +34,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Temp Imports & SQL Dumps
+temp_imports/
+*.sql
+app_old_backup.py

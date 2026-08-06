@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bulk Import Soil Samples — SoilTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #F4F1EB; font-family: 'Segoe UI', sans-serif; }
+        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; z-index: 1000; transition: transform 0.25s ease; }
+        .sidebar .logo { color: #fff; font-size: 20px; font-weight: 700; padding: 10px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px; }
+        .sidebar .logo span { font-size: 12px; display: block; font-weight: 400; opacity: 0.7; margin-top: 2px; }
+        .sidebar a { color: rgba(255,255,255,0.85); text-decoration: none; display: block; padding: 10px 20px; font-size: 14px; transition: all 0.15s; }
+        .sidebar a:hover { background-color: #3A6B4A; color: #fff; }
+        .sidebar a.active { background-color: #3A6B4A; color: #fff; font-weight: 600; }
+        .sidebar .nav-section { color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 15px 20px 5px; }
+        .sidebar-bottom { position: absolute; bottom: 0; width: 100%; border-top: 1px solid rgba(255,255,255,0.2); padding: 10px 0; }
+        .main-content { margin-left: 220px; padding: 30px; }
+        .topbar { background: white; padding: 12px 20px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; display: flex; align-items: center; gap: 10px; }
+        .card { border: 1px solid #DDD9CF; border-radius: 14px; background: white; padding: 24px; }
+
+        /* 5-Step Stepper Header */
+        .stepper-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding: 14px 20px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #DDD9CF;
+        }
+        .step-item { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: #9A9485; }
+        .step-item.active { color: #0F172A; }
+        .step-num { width: 26px; height: 26px; border-radius: 50%; background: #E2E8F0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #475569; }
+        .step-item.done .step-num { background: #16A34A; color: white; }
+        .step-item.active .step-num { background: #0F172A; color: white; }
+
+        /* Sheet Selector Card */
+        .sheet-selector-card {
+            background: #F1F5F9;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+        .sheet-selector-label { font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 10px; }
+        .sheet-pill {
+            background: white;
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .sheet-pill.active, .sheet-pill:hover {
+            background: #0F172A;
+            color: white;
+            border-color: #0F172A;
+        }
+
+        /* 3-Column Mapping Container */
+        .mapping-box {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .mapping-table th { font-size: 12px; font-weight: 700; color: #334155; padding: 10px 14px; border-bottom: 2px solid #CBD5E1; }
+        .mapping-table td { padding: 12px 14px; vertical-align: middle; border-bottom: 1px solid #E2E8F0; }
+        .mapping-table tr:last-child td { border-bottom: none; }
+        
+        .preview-val-text {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 12.5px;
+            color: #334155;
+            letter-spacing: 0.2px;
+        }
+
+        /* Default Assign Box */
+        .default-box {
+            background: #FFFBEB;
+            border: 1px solid #FDE68A;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+        .default-box-title { font-size: 13.5px; font-weight: 700; color: #B45309; margin-bottom: 10px; }
+
+        /* Preview table */
+        .preview-data-table th { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #475569; background: #F1F5F9; padding: 10px 14px; letter-spacing: 0.5px; }
+        .preview-data-table td { font-size: 13px; color: #334155; padding: 10px 14px; }
+
+        .hamburger-btn { display: none; background: none; border: none; font-size: 22px; color: #1A1814; cursor: pointer; padding: 0; line-height: 1; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 999; }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); box-shadow: 4px 0 24px rgba(0,0,0,0.25); }
+            .sidebar.show { transform: translateX(0); }
+            .sidebar-overlay.show { display: block; }
+            .main-content, .topbar { margin-left: 0 !important; }
+            .topbar { padding: 10px 14px; }
+            .topbar-title { font-size: 15px; }
+            .hamburger-btn { display: inline-flex; align-items: center; }
+            .main-content { padding: 14px; }
+            .card { padding: 16px; }
+            .stepper-bar { flex-wrap: wrap; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Overlay (mobile only) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+    <div class="logo">🌱 SoilTrack<span>Chemistry Department</span></div>
+    <div class="nav-section">Main</div>
+    <a href="/">📊 Dashboard</a>
+    <a href="/samples">📋 All Samples</a>
+    <a href="/add">➕ Add Sample</a>
+    <a href="/bulk-add" class="active">📁 Bulk Import</a>
+    <a href="/lab-calculation">🧪 Lab Calculation</a>
+    <div class="nav-section">Settings</div>
+    <a href="/multiplication-factors">⚗️ Multiplication Factors</a>
+    <div class="nav-section">Export</div>
+    <a href="/export">⬇ Export to Excel</a>
+    {% if session.get('role') == 'admin' %}
+    <div class="nav-section">Admin</div>
+    <a href="/users">👥 User Management</a>
+    {% endif %}
+    <div class="sidebar-bottom">
+        <div class="nav-section">Account</div>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+</div>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div class="topbar-title">
+        <button class="hamburger-btn" onclick="openSidebar()" aria-label="Open menu">☰</button>
+        Bulk Import Soil Samples
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row justify-content-center">
+        <div class="col-lg-11">
+
+            <!-- Stepper Navigation Header -->
+            <div class="stepper-bar shadow-sm">
+                <div class="step-item done">
+                    <div class="step-num">✓</div>
+                    <span>Upload</span>
+                </div>
+                <div class="step-item active">
+                    <div class="step-num">2</div>
+                    <span>Map Columns</span>
+                </div>
+                <div class="step-item">
+                    <div class="step-num">3</div>
+                    <span>Conflicts</span>
+                </div>
+                <div class="step-item">
+                    <div class="step-num">4</div>
+                    <span>Preview</span>
+                </div>
+                <div class="step-item">
+                    <div class="step-num">5</div>
+                    <span>Import</span>
+                </div>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ 'danger' if category in ['error', 'danger'] else 'success' }} alert-dismissible fade show" role="alert">
+                    {{ '✅' if category == 'success' else '⚠' }} {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="/bulk-process" id="mapForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="temp_filename" value="{{ temp_filename }}"/>
+                <input type="hidden" name="selected_sheet" id="selectedSheetInput" value="{{ selected_sheet }}"/>
+
+                <div class="card shadow-sm mb-4">
+
+                    <!-- Header Row -->
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                        <div>
+                            <span class="text-secondary small">File:</span>
+                            <strong class="text-dark fs-6">{{ original_filename }}</strong>
+                            <span class="text-secondary small ms-2">— <strong>{{ total_rows }}</strong> records</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-dark fw-semibold" onclick="autoMapColumns()">
+                            🪄 Auto-map Columns
+                        </button>
+                    </div>
+
+                    <!-- Top Sheet Selector Bar -->
+                    <div class="sheet-selector-card shadow-sm">
+                        <div class="sheet-selector-label">Select sheet with soil sample data</div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            {% for sheet in sheet_names %}
+                            <button type="button" class="sheet-pill {% if sheet == selected_sheet %}active{% endif %}" onclick="changeExcelSheet('{{ sheet }}')">
+                                {{ sheet }}
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Assign Scheme & Defaults Card -->
+                    <div class="default-box shadow-sm">
+                        <div class="default-box-title">Assign Scheme & Conflict Resolution</div>
+                        <div class="row g-3 align-items-center">
+                            <div class="col-md-4 col-12">
+                                <label class="form-label small fw-bold text-dark mb-1">Sample Source *</label>
+                                <select name="default_sample_source" class="form-select form-select-sm border-warning">
+                                    <option value="govt" selected>Government Sample</option>
+                                    <option value="private">Private Sample</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5 col-12">
+                                <label class="form-label small fw-bold text-dark mb-1">Government Scheme (If empty in file)</label>
+                                <input type="text" name="default_scheme" class="form-control form-control-sm border-warning" placeholder="e.g. Soil Health Card Scheme" value="Soil Health Card Scheme">
+                            </div>
+                            <div class="col-md-3 col-12 pt-md-3">
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="fill_blanks_only" name="fill_blanks_only" checked>
+                                    <label class="form-check-label small fw-semibold text-dark" for="fill_blanks_only">
+                                        Fill blanks only
+                                        <div class="text-secondary" style="font-size:11px">Never overwrite existing sample data</div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3-Column Interactive Mapping Box -->
+                    <div class="mapping-box shadow-sm">
+                        <div class="table-responsive">
+                            <table class="table mapping-table align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 32%">System Field</th>
+                                        <th style="width: 38%">Excel Column</th>
+                                        <th style="width: 30%">Preview Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for key, label, is_required in target_fields %}
+                                    <tr>
+                                        <td>
+                                            <span class="fw-bold text-dark fs-6">{{ label }}</span>
+                                            {% if is_required %}<span class="text-danger fw-bold ms-1">*</span>{% endif %}
+                                        </td>
+                                        <td>
+                                            <select name="map_{{ key }}" id="select_{{ key }}" class="form-select form-select-sm border-secondary-subtle mapping-select" onchange="updatePreviewValue('{{ key }}')">
+                                                <option value="">Select...</option>
+                                                {% for h in raw_headers %}
+                                                <option value="{{ h }}" {% if auto_mappings.get(key) == h %}selected{% endif %}>
+                                                    {{ h }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <span class="preview-val-text" id="preview_{{ key }}">
+                                                {% set selected_h = auto_mappings.get(key) %}
+                                                {% if selected_h and preview_rows and preview_rows[0].get(selected_h) %}
+                                                    {{ preview_rows[0].get(selected_h) }}
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Data Preview (first 5 rows) -->
+                    {% if preview_rows %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-dark mb-2">Data Preview (first {{ preview_rows|length }} rows)</h6>
+                        <div class="table-responsive border rounded-3">
+                            <table class="table preview-data-table table-hover mb-0 text-nowrap">
+                                <thead>
+                                    <tr>
+                                        {% for h in raw_headers %}
+                                        <th>{{ h }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in preview_rows %}
+                                    <tr>
+                                        {% for h in raw_headers %}
+                                        <td>{{ row.get(h, '—') }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Bottom Action Buttons -->
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 border-top">
+                        <a href="/bulk-add" class="btn btn-outline-secondary px-4 py-2 fw-semibold">
+                            Back
+                        </a>
+                        <button type="submit" id="btnConfirm" class="btn text-white fw-bold px-4 py-2" style="background:#0F172A; border-radius:8px">
+                            Continue to Preview →
+                        </button>
+                    </div>
+
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<script type="application/json" id="previewRowsDataJson">
+{{ preview_rows|tojson|safe if preview_rows else '[]' }}
+</script>
+
+<script>
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('show');
+    document.getElementById('sidebarOverlay').classList.add('show');
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('show');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+}
+
+const previewRowsData = JSON.parse(document.getElementById('previewRowsDataJson').textContent || '[]');
+
+function updatePreviewValue(fieldKey) {
+    const select = document.getElementById('select_' + fieldKey);
+    const previewSpan = document.getElementById('preview_' + fieldKey);
+    const selectedHeader = select.value;
+
+    if (selectedHeader && previewRowsData.length > 0 && previewRowsData[0][selectedHeader] !== undefined) {
+        previewSpan.innerHTML = previewRowsData[0][selectedHeader];
+    } else {
+        previewSpan.innerHTML = '<span class="text-muted">—</span>';
+    }
+}
+
+function autoMapColumns() {
+    window.location.reload();
+}
+
+function changeExcelSheet(sheetName) {
+    document.getElementById('selectedSheetInput').value = sheetName;
+}
+
+document.getElementById('mapForm').addEventListener('submit', function() {
+    const btn = document.getElementById('btnConfirm');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Importing {{ total_rows }} Samples... Please wait';
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

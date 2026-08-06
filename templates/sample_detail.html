@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #F4F1EB; font-family: 'Segoe UI', sans-serif; }
-        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; }
+        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; z-index: 1000; transition: transform 0.25s ease; }
         .sidebar .logo { color: #fff; font-size: 20px; font-weight: 700; padding: 10px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px; }
         .sidebar .logo span { font-size: 12px; display: block; font-weight: 400; opacity: 0.7; margin-top: 2px; }
         .sidebar a { color: rgba(255,255,255,0.85); text-decoration: none; display: block; padding: 10px 20px; font-size: 14px; transition: all 0.15s; }
@@ -16,35 +16,135 @@
         .sidebar .nav-section { color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 15px 20px 5px; }
         .sidebar-bottom { position: absolute; bottom: 0; width: 100%; border-top: 1px solid rgba(255,255,255,0.2); padding: 10px 0; }
         .main-content { margin-left: 220px; padding: 30px; }
-        .topbar { background: white; padding: 15px 30px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
-        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; }
+        .topbar { background: white; padding: 15px 30px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; display: flex; align-items: center; gap: 10px; }
+        .topbar-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .card { border: 1px solid #DDD9CF; border-radius: 12px; background: white; padding: 20px; margin-bottom: 16px; }
         .card-title { font-size: 11px; font-weight: 700; color: #9A9485; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; }
-        .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #F4F1EB; }
+        .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #F4F1EB; gap: 10px; }
         .detail-row:last-child { border-bottom: none; }
-        .dk { font-size: 12px; color: #9A9485; }
-        .dv { font-size: 13px; font-weight: 600; color: #1A1814; }
+        .dk { font-size: 12px; color: #9A9485; white-space: nowrap; }
+        .dv { font-size: 13px; font-weight: 600; color: #1A1814; text-align: right; }
         .badge-fertile  { background-color: #E6F2EA; color: #2D5A3D; padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
         .badge-moderate { background-color: #FDF4E3; color: #7A5010; padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
         .badge-poor     { background-color: #FCEAEA; color: #A83030; padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
-        .sample-id { font-family: monospace; font-size: 15px; background: #F4F1EB; border: 1px solid #DDD9CF; border-radius: 6px; padding: 4px 12px; }
+        .sample-id { font-family: monospace; font-size: 15px; background: #F4F1EB; border: 1px solid #DDD9CF; border-radius: 6px; padding: 4px 12px; white-space: nowrap; }
         .param-box { background: #F4F1EB; border-radius: 8px; padding: 12px 14px; }
         .param-name { font-size: 10px; font-weight: 700; color: #9A9485; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
         .param-val  { font-size: 20px; font-weight: 700; color: #1A1814; }
         .param-unit { font-size: 11px; color: #9A9485; }
-        .btn-edit        { background: #4A7C59; color: white; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; text-decoration: none; }
-        .btn-health-card { background: #3A6B4A; color: white; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; text-decoration: none; }
-        .btn-lab         { background: #5A8F6A; color: white; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; text-decoration: none; }
-        .btn-delete      { background: #FCEAEA; color: #A83030; border: 1px solid #E8C0C0; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; text-decoration: none; }
+        .btn-edit        { background: #4A7C59; color: white; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+        .btn-health-card { background: #3A6B4A; color: white; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+        .btn-lab         { background: #5A8F6A; color: white; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+        .btn-delete      { background: #FCEAEA; color: #A83030; border: 1px solid #E8C0C0; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
         .recommendation { background: #E6F2EA; border-radius: 8px; padding: 14px 16px; margin-top: 4px; }
         .rec-title { font-size: 11px; font-weight: 700; color: #2D5A3D; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
         .rec-text  { font-size: 13px; color: #2D5A3D; line-height: 1.6; }
+
+        /* ── Danger Zone: Delete lives here, well separated from the primary actions ── */
+        .danger-zone {
+            border: 1px solid #E8C0C0;
+            background: #FFF8F8;
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-top: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .danger-zone-text { flex: 1 1 260px; }
+        .danger-zone-title { font-size: 13px; font-weight: 700; color: #A83030; margin-bottom: 3px; }
+        .danger-zone-sub { font-size: 12px; color: #9A9485; }
+
+        /* ── Hamburger button: hidden on desktop, shown on mobile ── */
+        .hamburger-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 22px;
+            line-height: 1;
+            color: #1A1814;
+            cursor: pointer;
+            padding: 4px 6px;
+        }
+
+        /* ── Overlay behind the drawer, closes it on tap ── */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 999;
+        }
+        .sidebar-overlay.show { display: block; }
+
+        /* ══════════════════ MOBILE BREAKPOINT ══════════════════ */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content,
+            .topbar {
+                margin-left: 0 !important;
+            }
+            .topbar {
+                padding: 14px 16px;
+            }
+            .hamburger-btn {
+                display: inline-flex;
+                align-items: center;
+            }
+            .main-content {
+                padding: 16px;
+                max-width: 100% !important;
+            }
+            /* 3 primary buttons: comfortable 2-up + 1 wrap, generous spacing so nothing feels cramped */
+            .topbar-actions {
+                gap: 10px 12px;
+            }
+            .topbar-actions a {
+                padding: 9px 14px !important;
+                font-size: 12.5px !important;
+                flex: 1 1 calc(50% - 6px);
+                text-align: center;
+                justify-content: center;
+            }
+            /* 2 parameter boxes per row on mobile instead of full-width stacking */
+            #params-row > div {
+                flex: 0 0 50%;
+                max-width: 50%;
+            }
+            /* Danger zone stacks and centers on narrow screens, with its own breathing room */
+            .danger-zone {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+                padding: 20px 18px;
+            }
+            .danger-zone-text {
+                flex: 0 0 auto;   /* the 260px basis was a row-layout min-width — reset it here so it doesn't become a 260px min-height in column mode */
+            }
+            .danger-zone .btn-delete {
+                justify-content: center;
+                width: 100%;
+                margin-top: 4px;
+            }
+        }
     </style>
 </head>
 <body>
 
+<!-- Overlay (mobile only, closes drawer on tap) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
 <!-- Sidebar -->
-<div class="sidebar">
+<div class="sidebar" id="sidebar">
     <div class="logo">🌱 SoilTrack<span>Chemistry Department</span></div>
     <div class="nav-section">Main</div>
     <a href="/">📊 Dashboard</a>
@@ -52,7 +152,7 @@
     <a href="/add">➕ Add Sample</a>
     <a href="/lab-calculation">🧪 Lab Calculation</a>
     <div class="nav-section">Settings</div>
-    <a href="/dilution-factors">⚗️ Dilution Factors</a>
+    <a href="/multiplication-factors">⚗️ Multiplication Factors</a>
     <div class="nav-section">Export</div>
     <a href="/export">⬇ Export to Excel</a>
     <div class="sidebar-bottom">
@@ -63,12 +163,17 @@
 
 <!-- Topbar -->
 <div class="topbar">
-    <div class="topbar-title">Sample Detail</div>
-    <div style="display:flex;gap:10px;align-items:center;">
+    <div class="topbar-title">
+        <button class="hamburger-btn" onclick="openSidebar()" aria-label="Open menu">☰</button>
+        Sample Detail
+    </div>
+    <div class="topbar-actions">
+        {% if sample.sample_source == 'private' or sample.sample_type == 'Private' or (sample.testing_fee and sample.testing_fee > 0) %}
+        <a href="/bill/{{ sample.id }}" class="btn-bill" style="background:#2563EB; color:white; border-radius:6px; padding:7px 14px; text-decoration:none; font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:6px;">🧾 Generate Bill / Receipt</a>
+        {% endif %}
         <a href="/soil-health-card/{{ sample.id }}" class="btn-health-card">🌱 Soil Health Card</a>
         <a href="/lab-calculation" onclick="sessionStorage.setItem('prefill_id','{{ sample.sample_id }}')" class="btn-lab">🧪 Edit Lab</a>
         <a href="/edit/{{ sample.id }}" class="btn-edit">✏️ Edit</a>
-        <a href="/delete/{{ sample.id }}" class="btn-delete" onclick="return confirm('Are you sure you want to delete this sample?')">🗑 Delete</a>
     </div>
 </div>
 
@@ -76,7 +181,7 @@
 <div class="main-content" style="max-width:900px">
 
     <!-- Sample ID + Category -->
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
         <span class="sample-id">{{ sample.sample_id }}</span>
         {% if sample.category == 'Fertile' %}
             <span class="badge-fertile">● Fertile</span>
@@ -90,21 +195,32 @@
     <!-- Info Cards -->
     <div class="row g-3 mb-3">
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-title">Location Info</div>
+            <div class="card h-100">
+                <div class="card-title">Location & Farmer Info</div>
                 <div class="detail-row"><span class="dk">Village</span><span class="dv">{{ sample.village }}</span></div>
-                <div class="detail-row"><span class="dk">Farmer</span><span class="dv">{{ sample.farmer_name }}</span></div>
-                <div class="detail-row"><span class="dk">Type</span><span class="dv">{{ sample.sample_type }}</span></div>
-                <div class="detail-row"><span class="dk">Notes</span><span class="dv">{{ sample.notes or '—' }}</span></div>
+                <div class="detail-row"><span class="dk">Farmer Name</span><span class="dv">{{ sample.farmer_name or '—' }}</span></div>
+                <div class="detail-row"><span class="dk">Crop Field</span><span class="dv" style="color:#2D5A3D; font-weight:700;">🌱 {{ sample.crop or '—' }}</span></div>
+                <div class="detail-row"><span class="dk">Phone Number</span><span class="dv">{{ sample.phone_number or '—' }}</span></div>
+                <div class="detail-row"><span class="dk">Address</span><span class="dv">{{ sample.address or '—' }}</span></div>
+                <div class="detail-row"><span class="dk">Survey No.</span><span class="dv">{{ sample.survey_number or '—' }}</span></div>
             </div>
         </div>
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-title">Collection Info</div>
-                <div class="detail-row"><span class="dk">Date</span><span class="dv">{{ sample.collection_date }}</span></div>
-                <div class="detail-row"><span class="dk">Temperature</span><span class="dv">{{ sample.temperature or '—' }} °C</span></div>
-                <div class="detail-row"><span class="dk">Moisture</span><span class="dv">{{ sample.moisture or '—' }} %</span></div>
-                <div class="detail-row"><span class="dk">EC</span><span class="dv">{{ sample.ec or '—' }} dS/m</span></div>
+            <div class="card h-100">
+                <div class="card-title">Collection & Testing Info</div>
+                <div class="detail-row"><span class="dk">Collection Date</span><span class="dv">{{ sample.collection_date or '—' }}</span></div>
+                <div class="detail-row"><span class="dk">Sample Source</span><span class="dv">{% if sample.sample_source == 'govt' %}<span class="badge bg-success">Government</span>{% else %}<span class="badge bg-primary">Private</span>{% endif %}</span></div>
+                {% if sample.sample_source == 'govt' %}
+                <div class="detail-row"><span class="dk">Scheme Name</span><span class="dv">{{ sample.scheme or '—' }}</span></div>
+                {% else %}
+                <div class="detail-row"><span class="dk">Test Package</span><span class="dv" style="max-width:220px; text-align:right;">{{ sample.test_package or '—' }}</span></div>
+                <div class="detail-row"><span class="dk">Testing Fee</span><span class="dv" style="color:#2D5A3D; font-size:15px; font-weight:700;">₹{{ "%.2f"|format(sample.testing_fee or 0.0) }}</span></div>
+                <div class="detail-row" style="margin-top:10px; padding-top:10px; border-top:1px dashed #CBD5E1;">
+                    <span class="dk">Official Bill Receipt</span>
+                    <span class="dv"><a href="/bill/{{ sample.id }}" class="btn btn-sm btn-primary" style="font-weight:700; background:#2563EB; border:none; padding:5px 12px; border-radius:6px; color:white; text-decoration:none;">🧾 View & Print Bill Receipt</a></span>
+                </div>
+                {% endif %}
+                <div class="detail-row"><span class="dk">Notes</span><span class="dv">{{ sample.notes or '—' }}</span></div>
             </div>
         </div>
     </div>
@@ -112,7 +228,7 @@
     <!-- Parameters -->
     <div class="card mb-3">
         <div class="card-title">Soil Parameters</div>
-        <div class="row g-3">
+        <div class="row g-3" id="params-row">
             <div class="col-md-2"><div class="param-box"><div class="param-name">pH</div><div class="param-val">{{ sample.ph or '—' }}</div></div></div>
             <div class="col-md-2"><div class="param-box"><div class="param-name">Nitrogen</div><div class="param-val">{{ sample.nitrogen or '—' }}</div><div class="param-unit">kg/ha</div></div></div>
             <div class="col-md-2"><div class="param-box"><div class="param-name">Phosphorus</div><div class="param-val">{{ sample.phosphorus or '—' }}</div><div class="param-unit">kg/ha</div></div></div>
@@ -140,9 +256,32 @@
         </div>
     </div>
 
-    <a href="/samples" style="color:#4A7C59;font-weight:600;font-size:13px;text-decoration:none">← Back to All Samples</a>
+    <div class="danger-zone">
+        <div class="danger-zone-text">
+            <div class="danger-zone-title">⚠️ Delete this sample</div>
+            <div class="danger-zone-sub">This permanently removes the sample and its records. This cannot be undone.</div>
+        </div>
+        <a href="/delete/{{ sample.id }}" class="btn-delete" onclick="return confirm('Are you sure you want to delete this sample?')">🗑 Delete Sample</a>
+    </div>
+
+    <div style="margin-top:20px">
+        <a href="/samples" style="color:#4A7C59;font-weight:600;font-size:13px;text-decoration:none">← Back to All Samples</a>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function openSidebar() {
+        document.getElementById('sidebar').classList.add('show');
+        document.getElementById('sidebarOverlay').classList.add('show');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('show');
+        document.getElementById('sidebarOverlay').classList.remove('show');
+    }
+    window.addEventListener('resize', function () {
+        if (window.innerWidth > 768) closeSidebar();
+    });
+</script>
 </body>
 </html>

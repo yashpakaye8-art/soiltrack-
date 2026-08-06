@@ -17,6 +17,34 @@
             justify-content: center;
             overflow: hidden;
             padding: 24px;
+            position: relative;
+        }
+
+        /* ── Floating Leaf Particles (Task 8) ── */
+        .leaf-particles {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+        .leaf-particle {
+            position: absolute;
+            bottom: -50px;
+            opacity: 0;
+            animation: floatUp 14s ease-in-out infinite;
+        }
+        .leaf-particle:nth-child(1) { left: 8%; width: 26px; animation-delay: 0s; animation-duration: 16s; }
+        .leaf-particle:nth-child(2) { left: 24%; width: 20px; animation-delay: 3s; animation-duration: 14s; }
+        .leaf-particle:nth-child(3) { left: 45%; width: 30px; animation-delay: 6s; animation-duration: 18s; }
+        .leaf-particle:nth-child(4) { left: 68%; width: 22px; animation-delay: 2s; animation-duration: 15s; }
+        .leaf-particle:nth-child(5) { left: 88%; width: 28px; animation-delay: 7s; animation-duration: 17s; }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            15% { opacity: 0.35; }
+            85% { opacity: 0.35; }
+            100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
         }
 
         /* ── Outer card wrapper ── */
@@ -29,6 +57,8 @@
             border-radius: 20px;
             overflow: hidden;
             box-shadow: 0 20px 60px rgba(0,0,0,0.13);
+            position: relative;
+            z-index: 2;
         }
 
         /* ── Left botanical panel ── */
@@ -109,24 +139,24 @@
 
         .login-inner { width: 100%; }
 
-        .logo-area { margin-bottom: 28px; }
+        .logo-area { margin-bottom: 24px; }
         .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
         .logo-icon { width: 38px; height: 38px; background: #4A7C59; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
         .logo-name { font-size: 20px; font-weight: 800; color: #1A1814; }
         .logo-sub { font-size: 12px; color: #9A9485; }
 
-        .login-title { font-size: 22px; font-weight: 700; color: #1A1814; margin-bottom: 4px; margin-top: 20px; }
-        .login-sub { font-size: 13px; color: #9A9485; margin-bottom: 22px; }
+        .login-title { font-size: 22px; font-weight: 700; color: #1A1814; margin-bottom: 4px; margin-top: 16px; }
+        .login-sub { font-size: 13px; color: #9A9485; margin-bottom: 18px; }
 
         /* Role tabs */
-        .role-tabs { display: flex; gap: 7px; margin-bottom: 20px; background: #F4F1EB; border-radius: 10px; padding: 4px; }
+        .role-tabs { display: flex; gap: 5px; margin-bottom: 16px; background: #F4F1EB; border-radius: 10px; padding: 4px; }
         .role-tab {
-            flex: 1; text-align: center; padding: 8px 6px;
-            border-radius: 8px; font-size: 12.5px; font-weight: 600;
+            flex: 1; text-align: center; padding: 7px 4px;
+            border-radius: 8px; font-size: 11.5px; font-weight: 600;
             color: #9A9485; cursor: pointer; transition: all 0.2s; border: none; background: none;
         }
         .role-tab.active { background: #4A7C59; color: white; }
-        .role-tab .r-icon { display: block; font-size: 16px; margin-bottom: 2px; }
+        .role-tab .r-icon { display: block; font-size: 15px; margin-bottom: 2px; }
 
         .form-label { font-size: 11.5px; font-weight: 700; color: #5C5849; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; display: block; }
         .form-control { border: 1.5px solid #DDD9CF; border-radius: 8px; padding: 10px 14px; font-size: 13.5px; width: 100%; outline: none; transition: border-color 0.15s; }
@@ -144,6 +174,7 @@
         .role-note.show { display: block; }
 
         .alert-box { background: #FCEAEA; border: 1px solid #E8C0C0; color: #A83030; padding: 9px 14px; border-radius: 8px; font-size: 12.5px; margin-bottom: 14px; }
+        .alert-box.alert-success { background: #E6F2EA; border-color: #B8D4BE; color: #2D5A3D; }
 
         /* Mobile */
         @media (max-width: 768px) {
@@ -156,6 +187,15 @@
     </style>
 </head>
 <body>
+
+<!-- Floating Leaf Animation (Task 8) -->
+<div class="leaf-particles">
+    <svg class="leaf-particle" viewBox="0 0 24 24" fill="#4A7C59"><path d="M17,8C8,10 59,16 3,21C3,21 7,15 11,13C16,10.5 17,8 17,8Z"/></svg>
+    <svg class="leaf-particle" viewBox="0 0 24 24" fill="#6BAF7A"><path d="M17,8C8,10 59,16 3,21C3,21 7,15 11,13C16,10.5 17,8 17,8Z"/></svg>
+    <svg class="leaf-particle" viewBox="0 0 24 24" fill="#3A6B4A"><path d="M17,8C8,10 59,16 3,21C3,21 7,15 11,13C16,10.5 17,8 17,8Z"/></svg>
+    <svg class="leaf-particle" viewBox="0 0 24 24" fill="#7DC48A"><path d="M17,8C8,10 59,16 3,21C3,21 7,15 11,13C16,10.5 17,8 17,8Z"/></svg>
+    <svg class="leaf-particle" viewBox="0 0 24 24" fill="#4A7C59"><path d="M17,8C8,10 59,16 3,21C3,21 7,15 11,13C16,10.5 17,8 17,8Z"/></svg>
+</div>
 
 <div class="page-card">
 <!-- ══ LEFT: Botanical Panel ══ -->
@@ -178,7 +218,7 @@
         <ellipse cx="200" cy="780" rx="280" ry="160" fill="url(#mistBot)"/>
         <ellipse cx="520" cy="80" rx="220" ry="130" fill="url(#mistTop)"/>
 
-        <!-- ══ BOTTOM-LEFT TREE ══ -->
+        <!-- BOTTOM-LEFT TREE -->
         <path d="M-10,900 Q40,820 80,750 Q110,690 130,640" stroke="#3D2B1F" stroke-width="7" fill="none" stroke-linecap="round"/>
         <path d="M130,640 Q180,580 240,530 Q290,490 350,460" stroke="#3D2B1F" stroke-width="5" fill="none" stroke-linecap="round"/>
         <path d="M130,640 Q100,590 80,540 Q60,500 70,460" stroke="#4A3728" stroke-width="3.5" fill="none" stroke-linecap="round"/>
@@ -189,7 +229,7 @@
         <path d="M470,425 Q500,415 530,420" stroke="#6A5545" stroke-width="1.5" fill="none" stroke-linecap="round"/>
         <path d="M80,540 Q50,510 30,485" stroke="#5A4535" stroke-width="2" fill="none" stroke-linecap="round"/>
 
-        <!-- BOTTOM-LEFT LEAVES -->
+        <!-- LEAVES -->
         <ellipse cx="55" cy="760" rx="22" ry="14" fill="#6BAF7A" opacity="0.85" transform="rotate(-30 55 760)"/>
         <ellipse cx="85" cy="745" rx="26" ry="15" fill="#7DC48A" opacity="0.9" transform="rotate(-15 85 745)"/>
         <ellipse cx="110" cy="730" rx="20" ry="12" fill="#5A9E6A" opacity="0.8" transform="rotate(-40 110 730)"/>
@@ -198,49 +238,16 @@
         <ellipse cx="220" cy="540" rx="20" ry="12" fill="#6BAF7A" opacity="0.85" transform="rotate(-30 220 540)"/>
         <ellipse cx="165" cy="562" rx="18" ry="11" fill="#5A9E6A" opacity="0.8" transform="rotate(-65 165 562)"/>
         <ellipse cx="240" cy="525" rx="22" ry="12" fill="#8ACC94" opacity="0.88" transform="rotate(-20 240 525)"/>
-        <ellipse cx="185" cy="545" rx="16" ry="10" fill="#9AD4A4" opacity="0.75" transform="rotate(-45 185 545)"/>
         <ellipse cx="320" cy="468" rx="22" ry="12" fill="#7DC48A" opacity="0.9" transform="rotate(-35 320 468)"/>
         <ellipse cx="345" cy="455" rx="19" ry="11" fill="#6BAF7A" opacity="0.85" transform="rotate(-55 345 455)"/>
-        <ellipse cx="305" cy="458" rx="17" ry="10" fill="#8ACC94" opacity="0.8" transform="rotate(-20 305 458)"/>
-        <ellipse cx="362" cy="443" rx="16" ry="9" fill="#5A9E6A" opacity="0.85" transform="rotate(-40 362 443)"/>
         <ellipse cx="420" cy="428" rx="18" ry="10" fill="#7DC48A" opacity="0.8" transform="rotate(-25 420 428)"/>
-        <ellipse cx="445" cy="422" rx="15" ry="9" fill="#8ACC94" opacity="0.75" transform="rotate(-40 445 422)"/>
-        <ellipse cx="395" cy="432" rx="14" ry="8" fill="#6BAF7A" opacity="0.7" transform="rotate(-10 395 432)"/>
-        <ellipse cx="465" cy="425" rx="13" ry="8" fill="#9AD4A4" opacity="0.7" transform="rotate(-50 465 425)"/>
-        <ellipse cx="68" cy="505" rx="19" ry="11" fill="#7DC48A" opacity="0.82" transform="rotate(30 68 505)"/>
-        <ellipse cx="55" cy="490" rx="16" ry="10" fill="#6BAF7A" opacity="0.78" transform="rotate(15 55 490)"/>
-        <ellipse cx="80" cy="480" rx="17" ry="9" fill="#8ACC94" opacity="0.75" transform="rotate(40 80 480)"/>
-        <ellipse cx="270" cy="503" rx="15" ry="8" fill="#7DC48A" opacity="0.72" transform="rotate(-35 270 503)"/>
-        <ellipse cx="140" cy="600" rx="16" ry="9" fill="#6BAF7A" opacity="0.68" transform="rotate(-55 140 600)"/>
-        <ellipse cx="155" cy="585" rx="14" ry="8" fill="#8ACC94" opacity="0.65" transform="rotate(-25 155 585)"/>
 
-        <!-- ══ TOP-RIGHT BRANCH ══ -->
+        <!-- TOP-RIGHT BRANCH -->
         <path d="M710,0 Q660,60 610,120 Q570,165 530,205" stroke="#3D2B1F" stroke-width="5.5" fill="none" stroke-linecap="round"/>
         <path d="M610,120 Q570,100 530,90 Q495,82 465,88" stroke="#4A3728" stroke-width="3.5" fill="none" stroke-linecap="round"/>
         <path d="M530,205 Q490,225 450,240 Q415,252 380,258" stroke="#4A3728" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <path d="M465,88 Q435,82 405,88 Q380,94 360,105" stroke="#5A4535" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <path d="M380,258 Q350,265 320,268" stroke="#6A5545" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-        <path d="M360,105 Q330,110 305,120" stroke="#6A5545" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-
-        <!-- TOP-RIGHT LEAVES -->
-        <ellipse cx="645" cy="50" rx="20" ry="11" fill="#7DC48A" opacity="0.85" transform="rotate(55 645 50)"/>
-        <ellipse cx="670" cy="35" rx="17" ry="10" fill="#6BAF7A" opacity="0.8" transform="rotate(40 670 35)"/>
-        <ellipse cx="625" cy="65" rx="18" ry="10" fill="#8ACC94" opacity="0.82" transform="rotate(70 625 65)"/>
         <ellipse cx="570" cy="140" rx="22" ry="12" fill="#7DC48A" opacity="0.9" transform="rotate(45 570 140)"/>
-        <ellipse cx="595" cy="125" rx="19" ry="11" fill="#6BAF7A" opacity="0.85" transform="rotate(30 595 125)"/>
-        <ellipse cx="550" cy="155" rx="18" ry="10" fill="#5A9E6A" opacity="0.8" transform="rotate(60 550 155)"/>
-        <ellipse cx="608" cy="110" rx="16" ry="9" fill="#8ACC94" opacity="0.78" transform="rotate(20 608 110)"/>
         <ellipse cx="500" cy="98" rx="20" ry="11" fill="#7DC48A" opacity="0.85" transform="rotate(20 500 98)"/>
-        <ellipse cx="480" cy="107" rx="17" ry="9" fill="#6BAF7A" opacity="0.8" transform="rotate(35 480 107)"/>
-        <ellipse cx="468" cy="94" rx="15" ry="8" fill="#9AD4A4" opacity="0.75" transform="rotate(10 468 94)"/>
-        <ellipse cx="420" cy="247" rx="21" ry="11" fill="#7DC48A" opacity="0.87" transform="rotate(15 420 247)"/>
-        <ellipse cx="445" cy="236" rx="18" ry="10" fill="#6BAF7A" opacity="0.82" transform="rotate(30 445 236)"/>
-        <ellipse cx="400" cy="255" rx="16" ry="9" fill="#8ACC94" opacity="0.78" transform="rotate(5 400 255)"/>
-        <ellipse cx="460" cy="243" rx="14" ry="8" fill="#5A9E6A" opacity="0.75" transform="rotate(45 460 243)"/>
-        <ellipse cx="535" cy="192" rx="16" ry="8" fill="#7DC48A" opacity="0.7" transform="rotate(40 535 192)"/>
-        <ellipse cx="490" cy="212" rx="14" ry="8" fill="#8ACC94" opacity="0.68" transform="rotate(25 490 212)"/>
-        <ellipse cx="350" cy="268" rx="14" ry="7" fill="#6BAF7A" opacity="0.65" transform="rotate(10 350 268)"/>
-        <ellipse cx="325" cy="124" rx="13" ry="7" fill="#7DC48A" opacity="0.6" transform="rotate(20 325 124)"/>
     </svg>
 
     <!-- Text overlay -->
@@ -269,33 +276,52 @@
         <div class="login-title">Welcome back</div>
         <div class="login-sub">Sign in to continue to SoilTrack</div>
 
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert-box {% if category == 'success' %}alert-success{% endif %}">
+                {{ '✅' if category == 'success' else '⚠' }} {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
         {% if error %}
         <div class="alert-box">⚠ {{ error }}</div>
         {% endif %}
 
-        <!-- Role Selection Tabs -->
+        <!-- Role Selection Tabs (Chemist, HOD, Admin) -->
         <div class="role-tabs">
-            <button type="button" class="role-tab active" data-role="staff" onclick="selectRole('staff')">
-                <span class="r-icon">🔬</span>Staff
+            <button type="button" class="role-tab active" data-role="chemist" onclick="selectRole('chemist')">
+                <span class="r-icon">🔬</span>Chemist
+            </button>
+            <button type="button" class="role-tab" data-role="hod" onclick="selectRole('hod')">
+                <span class="r-icon">🎓</span>HOD
             </button>
             <button type="button" class="role-tab" data-role="admin" onclick="selectRole('admin')">
                 <span class="r-icon">👑</span>Admin
             </button>
         </div>
 
-        <div class="role-note" id="note-staff">Staff can add samples, run lab calculations, and edit records.</div>
-        <div class="role-note" id="note-admin">Admin has full access — manage users, delete records, update dilution factors.</div>
+        <div class="role-note show" id="note-chemist">Chemist (Technician) can add samples, run lab calculations, and generate reports.</div>
+        <div class="role-note" id="note-hod">HOD (Head of Dept.) has supervisory access to review samples, lab calculations, and reports.</div>
+        <div class="role-note" id="note-admin">Admin has full system access — manage users, reset passwords, update multiplication factors.</div>
 
         <!-- Login Form -->
         <form method="POST" action="/login">
-            <input type="hidden" name="role" id="role-input" value="staff">
+            <!-- Task 4: CSRF Token -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="role" id="role-input" value="chemist">
 
             <div class="mb-3">
                 <label class="form-label">Username</label>
                 <input type="text" class="form-control" name="username" placeholder="Enter your username" required>
             </div>
             <div class="mb-3">
-                <label class="form-label">Password</label>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label mb-0">Password</label>
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal" style="font-size:12px; font-weight:600; color:#4A7C59; text-decoration:none;">🔑 Forgot Password?</a>
+                </div>
                 <input type="password" class="form-control" name="password" placeholder="Enter your password" required>
             </div>
 
@@ -311,13 +337,54 @@
 
 </div><!-- end page-card -->
 
+<!-- Self-Service Forgot Password Modal -->
+<div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 14px; overflow: hidden; border: 1px solid #DDD9CF;">
+            <div class="modal-header" style="background: #4A7C59; color: white;">
+                <h5 class="modal-title fw-bold fs-6">🔑 Self-Service Password Reset</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/forgot-password">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body p-4">
+                    <p class="text-muted fs-7 mb-3">Reset your password instantly by verifying your registered username and full name.</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-uppercase fw-bold text-secondary" style="font-size: 11px;">Username</label>
+                        <input type="text" name="username" class="form-control" placeholder="Enter your username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-uppercase fw-bold text-secondary" style="font-size: 11px;">Registered Full Name</label>
+                        <input type="text" name="fullname" class="form-control" placeholder="Enter your full name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-uppercase fw-bold text-secondary" style="font-size: 11px;">New Password</label>
+                        <input type="password" name="new_password" class="form-control" placeholder="Enter new password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-uppercase fw-bold text-secondary" style="font-size: 11px;">Confirm New Password</label>
+                        <input type="password" name="confirm_password" class="form-control" placeholder="Confirm new password" required>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm text-white fw-bold" style="background: #4A7C59;">Reset Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 function selectRole(role) {
     document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
-    document.querySelector(`[data-role="${role}"]`).classList.add('active');
+    const btn = document.querySelector(`[data-role="${role}"]`);
+    if (btn) btn.classList.add('active');
     document.getElementById('role-input').value = role;
     document.querySelectorAll('.role-note').forEach(n => n.classList.remove('show'));
-    document.getElementById(`note-${role}`).classList.add('show');
+    const note = document.getElementById(`note-${role}`);
+    if (note) note.classList.add('show');
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

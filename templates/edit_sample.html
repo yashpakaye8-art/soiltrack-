@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #F4F1EB; font-family: 'Segoe UI', sans-serif; }
-        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; }
+        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; z-index: 1000; transition: transform 0.25s ease; }
         .sidebar .logo { color: #fff; font-size: 20px; font-weight: 700; padding: 10px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px; }
         .sidebar .logo span { font-size: 12px; display: block; font-weight: 400; opacity: 0.7; margin-top: 2px; }
         .sidebar a { color: rgba(255,255,255,0.85); text-decoration: none; display: block; padding: 10px 20px; font-size: 14px; transition: all 0.15s; }
@@ -17,22 +17,80 @@
         .sidebar-bottom { position: absolute; bottom: 0; width: 100%; border-top: 1px solid rgba(255,255,255,0.2); padding: 10px 0; }
         .main-content { margin-left: 220px; padding: 30px; }
         .topbar { background: white; padding: 15px 30px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
-        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; }
+        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; display: flex; align-items: center; gap: 10px; }
         .card { border: 1px solid #DDD9CF; border-radius: 12px; background: white; padding: 24px; max-width: 800px; }
         .section-title { font-size: 11px; font-weight: 700; color: #9A9485; text-transform: uppercase; letter-spacing: 0.8px; padding-bottom: 10px; border-bottom: 1px solid #DDD9CF; margin-bottom: 16px; margin-top: 24px; }
         label { font-size: 12px; font-weight: 700; color: #5C5849; margin-bottom: 4px; display: block; }
         input, select { font-size: 13px; border: 1px solid #CEC8BE; border-radius: 8px; padding: 8px 11px; width: 100%; outline: none; transition: border-color 0.15s; background: white; }
         input:focus, select:focus { border-color: #4A7C59; box-shadow: 0 0 0 3px rgba(74,124,89,0.1); }
         .hint { font-size: 11px; color: #9A9485; margin-top: 3px; }
-        .id-preview { background: #E6F2EA; border: 1px solid #BCD8C4; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; }
-        .id-preview-label { font-size: 10px; font-weight: 700; color: #2D5A3D; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
-        .id-preview-val { font-family: monospace; font-size: 18px; font-weight: 700; color: #2D5A3D; }
+        .id-preview { background: #E6F2EA; border: 1px solid #BCD8C4; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; overflow-x: auto; }
+        .id-preview-label { font-size: 10px; font-weight: 700; color: #2D5A3D; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; white-space: nowrap; }
+        .id-preview-val { font-family: monospace; font-size: 18px; font-weight: 700; color: #2D5A3D; white-space: nowrap; }
         .btn-save { background: #4A7C59; color: white; border: none; border-radius: 8px; padding: 10px 24px; font-size: 14px; font-weight: 600; cursor: pointer; }
         .btn-cancel { background: white; color: #5C5849; border: 1px solid #CEC8BE; border-radius: 8px; padding: 10px 24px; font-size: 14px; font-weight: 600; text-decoration: none; }
+
+        /* ── Hamburger button: hidden on desktop, shown on mobile ── */
+        .hamburger-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 22px;
+            line-height: 1;
+            color: #1A1814;
+            cursor: pointer;
+            padding: 4px 6px;
+        }
+
+        /* ── Overlay behind the drawer, closes it on tap ── */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 999;
+        }
+        .sidebar-overlay.show { display: block; }
+
+        /* ══════════════════ MOBILE BREAKPOINT ══════════════════ */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content,
+            .topbar {
+                margin-left: 0 !important;
+            }
+            .topbar {
+                padding: 14px 16px;
+            }
+            .hamburger-btn {
+                display: inline-flex;
+                align-items: center;
+            }
+            .main-content {
+                padding: 16px;
+            }
+            .card {
+                padding: 16px;
+                max-width: 100%;
+            }
+            .id-preview-val {
+                font-size: 16px;
+            }
+        }
     </style>
 </head>
 <body>
-<div class="sidebar">
+
+<!-- Overlay (mobile only, closes drawer on tap) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<div class="sidebar" id="sidebar">
     <div class="logo">🌱 SoilTrack<span>Chemistry Department</span></div>
     <div class="nav-section">Main</div>
     <a href="/">📊 Dashboard</a>
@@ -46,7 +104,10 @@
     </div>
 </div>
 <div class="topbar">
-    <div class="topbar-title">Edit Sample</div>
+    <div class="topbar-title">
+        <button class="hamburger-btn" onclick="openSidebar()" aria-label="Open menu">☰</button>
+        Edit Sample
+    </div>
 </div>
 <div class="main-content">
     <div class="card">
@@ -55,6 +116,7 @@
             <div class="id-preview-val">{{ sample.sample_id }}</div>
         </div>
         <form method="POST" action="/edit/{{ sample.id }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <div class="section-title">Location & Owner Info</div>
             <div class="row g-3">
                 <div class="col-md-6">
@@ -69,7 +131,7 @@
                     </select>
                 </div>
                 <div class="col-md-6" id="scheme-wrapper" style="display:none;">
-                    <label>Scheme</label>
+                    <label>Scheme Name</label>
                     <input type="text" name="scheme" value="{{ sample.scheme or '' }}" list="scheme-options" placeholder="Select or type a scheme name">
                     <datalist id="scheme-options">
                         <option value="PM-KISAN">
@@ -79,6 +141,75 @@
                         <option value="Paramparagat Krishi Vikas Yojana">
                     </datalist>
                     <div class="hint">Pick a common scheme or type a new one</div>
+                </div>
+                <div class="col-md-6">
+                    <label>Crop / Crop Stage Field</label>
+                    <select name="crop" id="crop-select">
+                        <option value="">-- Select Crop Field --</option>
+                        <optgroup label="🌾 CEREALS">
+                            <option value="Paddy" {% if sample.crop == 'Paddy' %}selected{% endif %}>Paddy</option>
+                            <option value="Paddy (Hybrid)" {% if sample.crop == 'Paddy (Hybrid)' %}selected{% endif %}>Paddy (Hybrid)</option>
+                            <option value="Nachani" {% if sample.crop == 'Nachani' %}selected{% endif %}>Nachani</option>
+                        </optgroup>
+                        <optgroup label="🫘 PULSES">
+                            <option value="Cow Pea" {% if sample.crop == 'Cow Pea' %}selected{% endif %}>Cow Pea</option>
+                        </optgroup>
+                        <optgroup label="🥦 VEGETABLES">
+                            <option value="Brinjal" {% if sample.crop == 'Brinjal' %}selected{% endif %}>Brinjal</option>
+                            <option value="Chilli" {% if sample.crop == 'Chilli' %}selected{% endif %}>Chilli</option>
+                            <option value="Okra" {% if sample.crop == 'Okra' %}selected{% endif %}>Okra</option>
+                            <option value="Ridge Gourd" {% if sample.crop == 'Ridge Gourd' %}selected{% endif %}>Ridge Gourd</option>
+                            <option value="Cabbage" {% if sample.crop == 'Cabbage' %}selected{% endif %}>Cabbage</option>
+                            <option value="Bitter Gourd" {% if sample.crop == 'Bitter Gourd' %}selected{% endif %}>Bitter Gourd</option>
+                        </optgroup>
+                        <optgroup label="🥭 FRUIT CROPS - MANGO">
+                            {% for yr in range(1, 10) %}
+                            {% set crop_val = 'Mango (' ~ yr ~ 'st year)' if yr == 1 else ('Mango (' ~ yr ~ 'nd year)' if yr == 2 else ('Mango (' ~ yr ~ 'rd year)' if yr == 3 else 'Mango (' ~ yr ~ 'th year)')) %}
+                            <option value="{{ crop_val }}" {% if sample.crop == crop_val %}selected{% endif %}>{{ crop_val }}</option>
+                            {% endfor %}
+                            <option value="Mango (10th year onward)" {% if sample.crop == 'Mango (10th year onward)' %}selected{% endif %}>Mango (10th year onward)</option>
+                        </optgroup>
+                        <optgroup label="🥜 FRUIT CROPS - CASHEW">
+                            <option value="Cashew (1st year)" {% if sample.crop == 'Cashew (1st year)' %}selected{% endif %}>Cashew (1st year)</option>
+                            <option value="Cashew (2nd year)" {% if sample.crop == 'Cashew (2nd year)' %}selected{% endif %}>Cashew (2nd year)</option>
+                            <option value="Cashew (3rd year)" {% if sample.crop == 'Cashew (3rd year)' %}selected{% endif %}>Cashew (3rd year)</option>
+                            <option value="Cashew (4th year Onwards)" {% if sample.crop == 'Cashew (4th year Onwards)' %}selected{% endif %}>Cashew (4th year Onwards)</option>
+                        </optgroup>
+                        <optgroup label="🥥 FRUIT CROPS - COCONUT">
+                            <option value="Coconut (1st year)" {% if sample.crop == 'Coconut (1st year)' %}selected{% endif %}>Coconut (1st year)</option>
+                            <option value="Coconut (2nd year)" {% if sample.crop == 'Coconut (2nd year)' %}selected{% endif %}>Coconut (2nd year)</option>
+                            <option value="Coconut (3rd year)" {% if sample.crop == 'Coconut (3rd year)' %}selected{% endif %}>Coconut (3rd year)</option>
+                            <option value="Coconut (4th year)" {% if sample.crop == 'Coconut (4th year)' %}selected{% endif %}>Coconut (4th year)</option>
+                            <option value="Coconut (5th year Onwards)" {% if sample.crop == 'Coconut (5th year Onwards)' %}selected{% endif %}>Coconut (5th year Onwards)</option>
+                            <option value="Coconut Hybrid (1st year)" {% if sample.crop == 'Coconut Hybrid (1st year)' %}selected{% endif %}>Coconut Hybrid (1st year)</option>
+                            <option value="Coconut Hybrid (2nd year)" {% if sample.crop == 'Coconut Hybrid (2nd year)' %}selected{% endif %}>Coconut Hybrid (2nd year)</option>
+                            <option value="Coconut Hybrid (3rd year)" {% if sample.crop == 'Coconut Hybrid (3rd year)' %}selected{% endif %}>Coconut Hybrid (3rd year)</option>
+                            <option value="Coconut Hybrid (4th year)" {% if sample.crop == 'Coconut Hybrid (4th year)' %}selected{% endif %}>Coconut Hybrid (4th year)</option>
+                            <option value="Coconut Hybrid (5th year Onwards)" {% if sample.crop == 'Coconut Hybrid (5th year Onwards)' %}selected{% endif %}>Coconut Hybrid (5th year Onwards)</option>
+                        </optgroup>
+                        <optgroup label="🍈 FRUIT CROPS - CHIKKU">
+                            {% for yr in range(1, 20) %}
+                            {% set crop_val = 'Chikku (' ~ yr ~ 'st year)' if yr == 1 else ('Chikku (' ~ yr ~ 'nd year)' if yr == 2 else ('Chikku (' ~ yr ~ 'rd year)' if yr == 3 else 'Chikku (' ~ yr ~ 'th year)')) %}
+                            <option value="{{ crop_val }}" {% if sample.crop == crop_val %}selected{% endif %}>{{ crop_val }}</option>
+                            {% endfor %}
+                            <option value="Chikku (20th year Onwards)" {% if sample.crop == 'Chikku (20th year Onwards)' %}selected{% endif %}>Chikku (20th year Onwards)</option>
+                        </optgroup>
+                        <optgroup label="🌴 OTHER FRUIT CROPS & SPICES">
+                            <option value="Arecanut (1st year)" {% if sample.crop == 'Arecanut (1st year)' %}selected{% endif %}>Arecanut (1st year)</option>
+                            <option value="Arecanut (2nd year)" {% if sample.crop == 'Arecanut (2nd year)' %}selected{% endif %}>Arecanut (2nd year)</option>
+                            <option value="Arecanut (3rd year Onwards)" {% if sample.crop == 'Arecanut (3rd year Onwards)' %}selected{% endif %}>Arecanut (3rd year Onwards)</option>
+                            <option value="Black Pepper (1st year)" {% if sample.crop == 'Black Pepper (1st year)' %}selected{% endif %}>Black Pepper (1st year)</option>
+                            <option value="Black Pepper (2nd year)" {% if sample.crop == 'Black Pepper (2nd year)' %}selected{% endif %}>Black Pepper (2nd year)</option>
+                            <option value="Black Pepper (3rd year Onwards)" {% if sample.crop == 'Black Pepper (3rd year Onwards)' %}selected{% endif %}>Black Pepper (3rd year Onwards)</option>
+                            {% for c_name in ['Nutmeg', 'Cinnamon', 'Kokum'] %}
+                                {% for yr in range(1, 10) %}
+                                {% set crop_val = c_name ~ ' (' ~ yr ~ 'st year)' if yr == 1 else (c_name ~ ' (' ~ yr ~ 'nd year)' if yr == 2 else (c_name ~ ' (' ~ yr ~ 'rd year)' if yr == 3 else c_name ~ ' (' ~ yr ~ 'th year)')) %}
+                                <option value="{{ crop_val }}" {% if sample.crop == crop_val %}selected{% endif %}>{{ crop_val }}</option>
+                                {% endfor %}
+                                <option value="{{ c_name }} (10th year onward)" {% if sample.crop == c_name ~ ' (10th year onward)' %}selected{% endif %}>{{ c_name }} (10th year onward)</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
                 </div>
                 <div class="col-md-6">
                     <label>Farmer / Owner Name</label>
@@ -101,7 +232,31 @@
                     <input type="text" name="collection_date" value="{{ sample.collection_date }}">
                 </div>
             </div>
-            <div style="margin-top:24px;display:flex;gap:10px">
+
+            <!-- PRIVATE SAMPLE TESTING & FEE SECTION -->
+            <div id="private-tests-wrapper" style="margin-top:24px; padding:18px; background:#F9F8F5; border:1px solid #E2DED6; border-radius:10px;">
+                <div class="section-title" style="margin-top:0; color:#2D5A3D;">💳 Private Sample Test & Rate Card Section</div>
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label>Select Test Package / Service</label>
+                        <select name="test_package" id="test-package-select" onchange="onTestPackageChange(this)">
+                            <option value="1. Basic Soil Test (pH, EC, Organic Carbon)" data-fee="250" {% if sample.test_package and ('1.' in sample.test_package or 'Basic' in sample.test_package) %}selected{% endif %}>1. Basic Soil Test (pH, EC, Organic Carbon) — ₹250</option>
+                            <option value="2. Major Nutrients Test (N, P, K)" data-fee="350" {% if sample.test_package and ('2.' in sample.test_package or 'Major' in sample.test_package) %}selected{% endif %}>2. Major Nutrients Test (N, P, K) — ₹350</option>
+                            <option value="3. Complete Soil Test (pH, EC, OC, NPK)" data-fee="550" {% if not sample.test_package or ('3.' in sample.test_package or 'Complete Soil Test' in sample.test_package) %}selected{% endif %}>3. Complete Soil Test (pH, EC, OC, NPK) — ₹550</option>
+                            <option value="4. Micronutrient Test (Zn, Fe, Mn, Cu)" data-fee="400" {% if sample.test_package and ('4.' in sample.test_package or 'Micronutrient' in sample.test_package) %}selected{% endif %}>4. Micronutrient Test (Zn, Fe, Mn, Cu) — ₹400</option>
+                            <option value="5. Full Soil Health Report (Macro + Micro Nutrients)" data-fee="900" {% if sample.test_package and ('5.' in sample.test_package or 'Full Soil Health' in sample.test_package) %}selected{% endif %}>5. Full Soil Health Report (Macro + Micro Nutrients) — ₹900</option>
+                        </select>
+                        <div class="hint">Standard turn-around time: 3–5 Days</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label>Testing Fee (₹)</label>
+                        <input type="number" step="1" name="testing_fee" id="testing-fee-input" value="{{ sample.testing_fee or 550 }}" placeholder="e.g. 550">
+                        <div class="hint">Auto-calculated from rate card</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:24px;display:flex;gap:10px;flex-wrap:wrap">
                 <button type="submit" class="btn-save">Update Sample</button>
                 <a href="/sample/{{ sample.id }}" class="btn-cancel">Cancel</a>
             </div>
@@ -111,12 +266,40 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 function toggleScheme(sourceValue) {
-    const wrapper = document.getElementById('scheme-wrapper');
-    wrapper.style.display = (sourceValue === 'govt') ? '' : 'none';
+    const schemeWrapper = document.getElementById('scheme-wrapper');
+    const privateWrapper = document.getElementById('private-tests-wrapper');
+    if (sourceValue === 'govt') {
+        if (schemeWrapper) schemeWrapper.style.display = '';
+        if (privateWrapper) privateWrapper.style.display = 'none';
+    } else {
+        if (schemeWrapper) schemeWrapper.style.display = 'none';
+        if (privateWrapper) privateWrapper.style.display = '';
+    }
 }
+
+function onTestPackageChange(selectElem) {
+    const selectedOption = selectElem.options[selectElem.selectedIndex];
+    const fee = selectedOption.getAttribute('data-fee');
+    if (fee !== null) {
+        document.getElementById('testing-fee-input').value = fee;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const select = document.getElementById('sample-source-select');
-    toggleScheme(select.value);
+    if (select) toggleScheme(select.value);
+});
+
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('show');
+    document.getElementById('sidebarOverlay').classList.add('show');
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('show');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+}
+window.addEventListener('resize', function () {
+    if (window.innerWidth > 768) closeSidebar();
 });
 </script>
 </body>

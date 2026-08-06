@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Lab Calculation - SoilTrack</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #F4F1EB; font-family: 'Segoe UI', sans-serif; }
-        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; }
+        .sidebar { min-height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; z-index: 1000; transition: transform 0.25s ease; }
         .sidebar .logo { color: #fff; font-size: 20px; font-weight: 700; padding: 10px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px; }
         .sidebar .logo span { font-size: 12px; display: block; font-weight: 400; opacity: 0.7; margin-top: 2px; }
         .sidebar a { color: rgba(255,255,255,0.85); text-decoration: none; display: block; padding: 10px 20px; font-size: 14px; transition: all 0.15s; }
@@ -15,12 +16,29 @@
         .sidebar a.active { background-color: #3A6B4A; color: #fff; font-weight: 600; }
         .sidebar .nav-section { color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 15px 20px 5px; }
         .sidebar-bottom { position: absolute; bottom: 0; width: 100%; border-top: 1px solid rgba(255,255,255,0.2); padding: 10px 0; }
-        .topbar { background: white; padding: 15px 30px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
-        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; }
+        .topbar { background: white; padding: 15px 30px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; display: flex; align-items: center; gap: 10px; }
         .main-content { margin-left: 220px; padding: 30px; }
         .card { border: 1px solid #DDD9CF; border-radius: 12px; background: white; }
         .steps-wrap { background: white; border: 1px solid #DDD9CF; border-radius: 12px; padding: 20px 28px; margin-bottom: 20px; overflow-x: auto; }
         .steps-track { display: flex; align-items: flex-start; min-width: 560px; }
+
+        /* ── Compact mobile stepper: 7 discrete segments, replaces the scrolling circle track below 768px ── */
+        .mobile-stepper { display: none; }
+        .mobile-stepper-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+        .mobile-stepper-count { font-size: 11px; font-weight: 700; color: #9A9485; font-family: monospace; letter-spacing: 0.3px; }
+        .mobile-stepper-name { font-size: 14px; font-weight: 700; color: #1A1814; }
+        .mobile-stepper-segments { display: flex; gap: 5px; }
+        .mobile-stepper-seg { flex: 1; height: 7px; border-radius: 4px; background: #E4E1D8; position: relative; overflow: hidden; }
+        .mobile-stepper-seg.done { background: #4A7C59; }
+        .mobile-stepper-seg.active { background: #E4E1D8; }
+        .mobile-stepper-seg.active::after {
+            content: '';
+            position: absolute; top: 0; left: 0; bottom: 0;
+            width: 55%;
+            background: #4A7C59;
+            border-radius: 4px;
+        }
         .step-item { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; cursor: pointer; }
         .step-item:not(:last-child)::after { content: ''; position: absolute; top: 16px; left: 50%; width: 100%; height: 2px; background: #DDD9CF; z-index: 0; }
         .step-item.done:not(:last-child)::after { background: #4A7C59; }
@@ -48,7 +66,7 @@
         .lookup-status { font-size: 12.5px; padding: 7px 12px; border-radius: 7px; margin-top: 6px; display: none; }
         .lookup-ok  { background: #EEF5F0; color: #2D5A3D; border: 1px solid #C8DDD0; display: block; }
         .lookup-err { background: #FCEAEA; color: #A83030; border: 1px solid #F0C8C8; display: block; }
-        .autofill-notice { background: #FDF4E3; border: 1px solid #E8D4A0; border-radius: 8px; padding: 9px 14px; display: none; align-items: center; gap: 10px; margin-bottom: 16px; }
+        .autofill-notice { background: #FDF4E3; border: 1px solid #E8D4A0; border-radius: 8px; padding: 9px 14px; display: none; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
         .autofill-notice .badge-edit { background: #C4923A; color: white; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
         .autofill-notice span { font-size: 12.5px; color: #7A5010; }
         .edit-mode-badge { display: none; background: #FDF4E3; border: 1.5px solid #C4923A; color: #7A5010; border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 700; }
@@ -57,14 +75,24 @@
         .result-item .r-label { font-size: 10px; font-weight: 700; color: #9A9485; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
         .result-item .r-value { font-size: 18px; font-weight: 700; font-family: monospace; color: #2D5A3D; }
         .result-item .r-unit  { font-size: 10.5px; color: #9A9485; margin-top: 1px; }
-        .category-banner { border-radius: 10px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
-        .cat-fertile  { background: #EEF5F0; border: 2px solid #4A7C59; }
-        .cat-moderate { background: #FDF4E3; border: 2px solid #C4923A; }
-        .cat-poor     { background: #FCEAEA; border: 2px solid #B84A4A; }
-        .cat-icon { font-size: 30px; }
-        .cat-title { font-size: 17px; font-weight: 700; color: #1A1814; }
-        .cat-desc  { font-size: 12.5px; color: #9A9485; margin-top: 2px; }
-        .wizard-footer { padding: 16px 24px; border-top: 1px solid #DDD9CF; background: #FAFAF7; border-radius: 0 0 12px 12px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* ── Report-style results table (replaces the boxy grid — reads like an actual lab report) ── */
+        .result-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #DDD9CF; border-radius: 10px; overflow: hidden; }
+        .result-table tr { border-bottom: 1px solid #F0EEE8; }
+        .result-table tr:last-child { border-bottom: none; }
+        .result-table tr:nth-child(even) { background: #FAFAF7; }
+        .result-table td { padding: 9px 16px; font-size: 13px; vertical-align: middle; }
+        .result-table td.rt-label { color: #5C5849; font-weight: 600; }
+        .result-table td.rt-value { text-align: right; font-family: monospace; font-weight: 700; color: #2D5A3D; white-space: nowrap; }
+        .result-table td.rt-unit { text-align: right; color: #9A9485; font-size: 10.5px; width: 60px; padding-left: 4px; }
+        .category-banner { border-radius: 10px; padding: 12px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .cat-fertile  { background: #EEF5F0; border: 1.5px solid #4A7C59; }
+        .cat-moderate { background: #FDF4E3; border: 1.5px solid #C4923A; }
+        .cat-poor     { background: #FCEAEA; border: 1.5px solid #B84A4A; }
+        .cat-icon { font-size: 22px; }
+        .cat-title { font-size: 14.5px; font-weight: 700; color: #1A1814; }
+        .cat-desc  { font-size: 12px; color: #9A9485; margin-top: 1px; }
+        .wizard-footer { padding: 16px 24px; border-top: 1px solid #DDD9CF; background: #FAFAF7; border-radius: 0 0 12px 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .btn-green  { background: #4A7C59; color: white; border: none; border-radius: 8px; padding: 9px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
         .btn-green:hover  { background: #3A6B4A; color: white; }
         .btn-outline-green { background: transparent; color: #4A7C59; border: 1.5px solid #4A7C59; border-radius: 8px; padding: 8px 18px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
@@ -77,25 +105,102 @@
         .step-panel { display: none; }
         .step-panel.active { display: block; animation: fadeUp 0.2s ease; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .toast-msg { position: fixed; bottom: 24px; right: 24px; background: #2D5A3D; color: white; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 500; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 9999; transform: translateY(60px); opacity: 0; transition: all 0.3s; }
+        .toast-msg { position: fixed; bottom: 24px; right: 24px; background: #2D5A3D; color: white; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 500; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 9999; transform: translateY(60px); opacity: 0; transition: all 0.3s; max-width: calc(100vw - 32px); }
         .toast-msg.show { transform: translateY(0); opacity: 1; }
         .ec-hint { font-size: 11px; color: #9A9485; margin-top: 3px; font-family: monospace; }
 
         /* ── Year/Date toggle ── */
-        .toggle-btn { font-size: 11px; font-weight: 600; padding: 4px 11px; border-radius: 6px; border: 1.5px solid #DDD9CF; background: white; color: #9A9485; cursor: pointer; transition: all 0.15s; }
+        .toggle-btn { font-size: 11px; font-weight: 600; padding: 4px 11px; border-radius: 6px; border: 1.5px solid #DDD9CF; background: white; color: #9A9485; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
         .toggle-btn.active { background: #4A7C59; color: white; border-color: #4A7C59; }
 
-        @media print {
-            .sidebar, .topbar, .wizard-footer, .steps-wrap { display: none !important; }
-            .main-content { margin-left: 0; padding: 0; }
-            .step-panel { display: none !important; }
-            .step-panel.active { display: block !important; }
+        /* ── Hamburger button: hidden on desktop, shown on mobile ── */
+        .hamburger-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 22px;
+            line-height: 1;
+            color: #1A1814;
+            cursor: pointer;
+            padding: 4px 6px;
+        }
+
+        /* ── Overlay behind the drawer, closes it on tap ── */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 999;
+        }
+        .sidebar-overlay.show { display: block; }
+
+        /* ══════════════════ MOBILE BREAKPOINT ══════════════════ */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content,
+            .topbar {
+                margin-left: 0 !important;
+            }
+            .topbar {
+                padding: 14px 16px;
+            }
+            .hamburger-btn {
+                display: inline-flex;
+                align-items: center;
+            }
+            .main-content {
+                padding: 14px;
+            }
+            .steps-wrap {
+                padding: 14px 16px;
+            }
+            .steps-track {
+                display: none;   /* the scrolling circle track doesn't fit mobile widths — replaced below */
+            }
+            .mobile-stepper {
+                display: block;
+            }
+            .wizard-header {
+                padding: 14px 16px;
+            }
+            .step-panel .p-4 {
+                padding: 16px !important;
+            }
+            /* Report table already reads cleanly at any width — no override needed */
+            .wizard-footer {
+                padding: 14px 16px;
+                justify-content: center;
+            }
+            .wizard-footer > div {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            #btn-prev {
+                width: 100%;
+                order: 3;
+            }
+            .toast-msg {
+                right: 16px;
+                left: 16px;
+                bottom: 16px;
+            }
         }
     </style>
 </head>
 <body>
 
-<div class="sidebar">
+<!-- Overlay (mobile only, closes drawer on tap) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<div class="sidebar" id="sidebar">
     <div class="logo">🌱 SoilTrack<span>Chemistry Department</span></div>
     <div class="nav-section">Main</div>
     <a href="/">📊 Dashboard</a>
@@ -103,9 +208,13 @@
     <a href="/add">➕ Add Sample</a>
     <a href="/lab-calculation" class="active">🧪 Lab Calculation</a>
     <div class="nav-section">Settings</div>
-    <a href="/dilution-factors">⚗️ Dilution Factors</a>
+    <a href="/multiplication-factors">⚗️ Multiplication Factors</a>
     <div class="nav-section">Export</div>
     <a href="/export">⬇ Export to Excel</a>
+    {% if session.get('role') == 'admin' %}
+    <div class="nav-section">Admin</div>
+    <a href="/users">👥 User Management</a>
+    {% endif %}
     <div class="sidebar-bottom">
         <div class="nav-section">Account</div>
         <a href="/logout">🚪 Logout</a>
@@ -113,8 +222,11 @@
 </div>
 
 <div class="topbar">
-    <div class="topbar-title">🧪 Lab Calculation Wizard</div>
-    <div style="display:flex;align-items:center;gap:10px;">
+    <div class="topbar-title">
+        <button class="hamburger-btn" onclick="openSidebar()" aria-label="Open menu">☰</button>
+        🧪 Lab Calculation Wizard
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div class="edit-mode-badge" id="edit-mode-badge">✏️ EDIT MODE — updating existing sample</div>
         <a href="/samples" class="btn-muted" style="text-decoration:none;">← Back to Samples</a>
     </div>
@@ -132,6 +244,21 @@
             <div class="step-item" data-step="5"><div class="step-circle">5</div><div class="step-label">OC + B + S</div></div>
             <div class="step-item" data-step="6"><div class="step-circle">6</div><div class="step-label">AAS Metals</div></div>
             <div class="step-item" data-step="7"><div class="step-circle">✓</div><div class="step-label">Review & Save</div></div>
+        </div>
+        <div class="mobile-stepper" id="mobile-stepper">
+            <div class="mobile-stepper-top">
+                <span class="mobile-stepper-count" id="mobile-stepper-count">STEP 1 / 7</span>
+                <span class="mobile-stepper-name" id="mobile-stepper-name">Sample Info</span>
+            </div>
+            <div class="mobile-stepper-segments" id="mobile-stepper-segments">
+                <div class="mobile-stepper-seg" data-seg="1"></div>
+                <div class="mobile-stepper-seg" data-seg="2"></div>
+                <div class="mobile-stepper-seg" data-seg="3"></div>
+                <div class="mobile-stepper-seg" data-seg="4"></div>
+                <div class="mobile-stepper-seg" data-seg="5"></div>
+                <div class="mobile-stepper-seg" data-seg="6"></div>
+                <div class="mobile-stepper-seg" data-seg="7"></div>
+            </div>
         </div>
     </div>
 
@@ -173,9 +300,9 @@
                     <input type="hidden" id="sample_type" value="Soil">
 
                     <!-- ── Collection Year / Date with toggle ── -->
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">Collection Year / Date</label>
-                        <div style="display:flex;gap:6px;margin-bottom:7px;">
+                        <div style="display:flex;gap:6px;margin-bottom:7px;flex-wrap:wrap;">
                             <button type="button" class="toggle-btn active" id="wiz-btn-year" onclick="wizSwitchMode('year')">📅 Year Range</button>
                             <button type="button" class="toggle-btn" id="wiz-btn-date" onclick="wizSwitchMode('date')">🗓 Exact Date</button>
                         </div>
@@ -184,15 +311,6 @@
                         <!-- Exact date picker (hidden by default) -->
                         <input type="date" class="form-control" id="collection_date_exact" style="display:none;">
                         <div style="font-size:11px;color:#9A9485;margin-top:3px;" id="wiz-date-hint">Enter year range like 2025-2026</div>
-                    </div>
-
-                    <div class="col-md-2">
-                        <label class="form-label">Temp <span class="lbl-sub">(°C)</span></label>
-                        <input type="number" class="form-control" id="temperature" placeholder="28" step="0.1">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Moisture <span class="lbl-sub">(%)</span></label>
-                        <input type="number" class="form-control" id="moisture" placeholder="14" step="0.1">
                     </div>
                 </div>
             </div>
@@ -206,7 +324,7 @@
                 <p>EC is auto-calculated using temperature compensation table</p>
             </div>
             <div class="p-4">
-                <div class="info-box"><strong>Formula:</strong> EC = Observed EC × Temperature Compensation Factor &nbsp;|&nbsp; Reference temp: 25°C</div>
+                <div class="info-box"><strong>Formula:</strong> EC = Observed EC × Temperature Compensation Factor &nbsp;|&nbsp; Reference temp: 25°C &nbsp;|&nbsp; Unit: <code>mS/cm</code></div>
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label">pH Value</label>
@@ -214,7 +332,7 @@
                     </div>
                     <div class="col-12"><div class="sec-divider"><span>⚡ EC Reading</span></div></div>
                     <div class="col-md-4">
-                        <label class="form-label">Observed EC <span class="lbl-sub">(dS/m)</span></label>
+                        <label class="form-label">Observed EC <span class="lbl-sub">(mS/cm)</span></label>
                         <input type="number" class="form-control" id="observed_ec" placeholder="e.g. 0.45" step="0.001" oninput="calcEC()">
                     </div>
                     <div class="col-md-4">
@@ -223,7 +341,7 @@
                         <div class="ec-hint" id="comp-factor-display">Compensation factor: —</div>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Calculated EC <span class="lbl-sub">(auto)</span></label>
+                        <label class="form-label">Calculated EC <span class="lbl-sub">(mS/cm, auto)</span></label>
                         <input type="text" class="form-control calc-field" id="ec" readonly placeholder="Auto-calculated…">
                     </div>
                 </div>
@@ -245,11 +363,12 @@
                         <input type="number" class="form-control" id="n_burette_a" placeholder="e.g. 12.5" step="0.01" oninput="calcNitrogen()">
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Burette Reading B <span class="lbl-sub">(ml)</span></label>
-                        <input type="number" class="form-control" id="n_burette_b" placeholder="e.g. 8.2" step="0.01" oninput="calcNitrogen()">
+                        <label class="form-label">Burette Reading B <span class="lbl-sub">(ml - Blank Reading)</span></label>
+                        <input type="number" class="form-control" id="n_burette_b" placeholder="e.g. 0.0" step="0.01" oninput="calcNitrogen()">
+                        <div class="ec-hint" id="burette-b-hint">Blank reading constant pre-filled from Multiplication Factors</div>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Calculated Nitrogen <span class="lbl-sub">(auto)</span></label>
+                        <label class="form-label">Calculated Nitrogen <span class="lbl-sub">(kg/ha, auto)</span></label>
                         <input type="text" class="form-control calc-field" id="nitrogen" readonly placeholder="Auto-calculated…">
                     </div>
                 </div>
@@ -275,7 +394,7 @@
                         <input type="number" class="form-control" id="abs_phosphorus" placeholder="e.g. 0.285" step="0.0001" oninput="calcAbs('phosphorus')">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Calculated Phosphorus <span class="lbl-sub">(auto)</span></label>
+                        <label class="form-label">Calculated Phosphorus <span class="lbl-sub">(kg/ha, auto)</span></label>
                         <input type="text" class="form-control calc-field" id="phosphorus" readonly placeholder="Auto-calculated…">
                     </div>
                     <div class="col-12"><div class="sec-divider"><span>🔥 Potassium</span></div></div>
@@ -284,7 +403,7 @@
                         <input type="number" class="form-control" id="abs_potassium" placeholder="e.g. 9.5" step="0.001" oninput="calcAbs('potassium')">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Calculated Potassium <span class="lbl-sub">(auto)</span></label>
+                        <label class="form-label">Calculated Potassium <span class="lbl-sub">(kg/ha, auto)</span></label>
                         <input type="text" class="form-control calc-field" id="potassium" readonly placeholder="Auto-calculated…">
                     </div>
                 </div>
@@ -369,7 +488,24 @@
                         <div class="cat-desc" id="cat-desc">Based on pH, Nitrogen, Phosphorus, Potassium</div>
                     </div>
                 </div>
-                <div class="result-grid" id="result-grid"></div>
+                <table class="result-table" id="result-table"><tbody></tbody></table>
+
+                <div class="sec-divider"><span>✍️ Sign-off</span></div>
+                <div class="row g-3 mb-2">
+                    <div class="col-md-4">
+                        <label class="form-label">Analyzed By</label>
+                        <input type="text" class="form-control" id="analyzed_by" placeholder="Lab technician name">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Checked By</label>
+                        <input type="text" class="form-control" id="checked_by" placeholder="Checked by name">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Approved By</label>
+                        <input type="text" class="form-control" id="approved_by" placeholder="Approved by name">
+                    </div>
+                </div>
+
                 <div class="row g-3 mt-1">
                     <div class="col-12">
                         <label class="form-label">Notes <span class="lbl-sub">(optional)</span></label>
@@ -421,7 +557,18 @@ async function loadFactors() {
         const r = await fetch('/api/factors');
         factors = await r.json();
     } catch(e) {
-        factors = { phosphorus:41.65, potassium:11.2, organic_carbon:2.78, boron:5.36, sulphur:541.0, zinc:18.8, iron:72.6, manganese:39.87, copper:32.98 };
+        factors = { n_burette_b:0.0, phosphorus:41.65, potassium:11.2, organic_carbon:2.78, boron:5.36, sulphur:541.0, zinc:18.8, iron:72.6, manganese:39.87, copper:32.98 };
+    }
+    if (factors.n_burette_b !== undefined) {
+        const bInput = document.getElementById('n_burette_b');
+        const bHint = document.getElementById('burette-b-hint');
+        if (bInput && (!bInput.value || bInput.value === '0' || bInput.value === '0.0')) {
+            bInput.value = factors.n_burette_b;
+            calcNitrogen();
+        }
+        if (bHint) {
+            bHint.textContent = `Default blank constant: ${factors.n_burette_b} ml (pre-filled from Multiplication Factors)`;
+        }
     }
 }
 loadFactors();
@@ -486,8 +633,6 @@ async function lookupSample() {
             setVal('farmer_name', d.farmer_name);
             setVal('village', d.village);
             setVal('sample_type', d.sample_type);
-            setVal('temperature', d.temperature);
-            setVal('moisture', d.moisture);
 
             // Smart fill collection_date — detect if it's a year range or exact date
             if (d.collection_date) {
@@ -532,9 +677,29 @@ async function lookupSample() {
             setVal('abs_copper', d.abs_copper);
             setVal('copper', d.copper);
             setVal('notes', d.notes);
+            setVal('analyzed_by', d.analyzed_by);
+            setVal('checked_by', d.checked_by);
+            setVal('approved_by', d.approved_by);
 
             statusEl.className = 'lookup-status lookup-ok';
-            statusEl.textContent = `✅ Loaded: ${d.farmer_name || '—'} · ${d.village || '—'} · All readings filled in Steps 2–6`;
+            let pkgText = d.test_package ? ` · 💳 Package: ${d.test_package}` : '';
+            statusEl.innerHTML = `✅ Loaded: <b>${d.farmer_name || '—'}</b> · <b>${d.village || '—'}</b>${pkgText}`;
+            
+            // Show package banner if available
+            let pkgNotice = document.getElementById('pkg-notice-banner');
+            if (!pkgNotice) {
+                pkgNotice = document.createElement('div');
+                pkgNotice.id = 'pkg-notice-banner';
+                pkgNotice.style.cssText = 'background:#EBF3ED; border:1.5px solid #4A7C59; border-radius:8px; padding:10px 14px; margin-top:10px; color:#2D5A3D; font-size:13px; font-weight:600;';
+                statusEl.parentNode.appendChild(pkgNotice);
+            }
+            if (d.test_package && d.included_params) {
+                pkgNotice.style.display = 'block';
+                pkgNotice.innerHTML = `💳 <b>Private Rate Card Package:</b> ${d.test_package}<br><span style="font-size:12px; color:#5C5849; font-weight:500;">Required Tests: <b style="color:#4A7C59;">${d.included_params.join(', ').toUpperCase()}</b></span>`;
+            } else {
+                pkgNotice.style.display = 'none';
+            }
+
             noticeEl.style.display = 'flex';
             document.getElementById('edit-mode-badge').style.display = 'block';
             isUpdate = true;
@@ -584,21 +749,125 @@ function getCategory(ph, n, p, k) {
     return r >= 0.75 ? 'Fertile' : r >= 0.5 ? 'Moderate' : 'Poor';
 }
 
+function getJSParamRating(param, val) {
+    if (val === null || val === undefined || val === '' || isNaN(val)) return null;
+    val = parseFloat(val);
+
+    const SVG_GREEN = '<svg viewBox="0 0 100 100" width="100%" height="100%"><defs><radialGradient id="gGreen" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="#86EFAC"/><stop offset="55%" stop-color="#22C55E"/><stop offset="100%" stop-color="#16803C"/></radialGradient></defs><circle cx="50" cy="50" r="47" fill="url(#gGreen)"/><ellipse cx="38" cy="28" rx="20" ry="12" fill="#ffffff" opacity="0.28"/><circle cx="34" cy="46" r="5.5" fill="#1a1a1a"/><circle cx="66" cy="46" r="5.5" fill="#1a1a1a"/><path d="M30 60 Q50 82 70 60 Q68 76 50 76 Q32 76 30 60 Z" fill="#7A1F1F"/><path d="M33 61 Q50 72 67 61" stroke="#ffffff" stroke-width="4" fill="none" stroke-linecap="round"/></svg>';
+    const SVG_YELLOW = '<svg viewBox="0 0 100 100" width="100%" height="100%"><defs><radialGradient id="gYellow" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="#FDE68A"/><stop offset="55%" stop-color="#EAB308"/><stop offset="100%" stop-color="#A5730A"/></radialGradient></defs><circle cx="50" cy="50" r="47" fill="url(#gYellow)"/><ellipse cx="38" cy="28" rx="20" ry="12" fill="#ffffff" opacity="0.3"/><circle cx="34" cy="46" r="5" fill="#1a1a1a"/><circle cx="66" cy="46" r="5" fill="#1a1a1a"/><path d="M32 62 Q50 74 68 62" stroke="#1a1a1a" stroke-width="4.5" fill="none" stroke-linecap="round"/></svg>';
+    const SVG_ORANGE = '<svg viewBox="0 0 100 100" width="100%" height="100%"><defs><radialGradient id="gOrange" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="#FDBA74"/><stop offset="55%" stop-color="#F97316"/><stop offset="100%" stop-color="#B4530A"/></radialGradient></defs><circle cx="50" cy="50" r="47" fill="url(#gOrange)"/><ellipse cx="38" cy="28" rx="20" ry="12" fill="#ffffff" opacity="0.28"/><circle cx="34" cy="46" r="5" fill="#1a1a1a"/><circle cx="66" cy="46" r="5" fill="#1a1a1a"/><line x1="33" y1="65" x2="67" y2="65" stroke="#1a1a1a" stroke-width="4.5" stroke-linecap="round"/></svg>';
+    const SVG_RED = '<svg viewBox="0 0 100 100" width="100%" height="100%"><defs><radialGradient id="gRed" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="#FCA5A5"/><stop offset="55%" stop-color="#EF4444"/><stop offset="100%" stop-color="#9B1C1C"/></radialGradient></defs><circle cx="50" cy="50" r="47" fill="url(#gRed)"/><ellipse cx="38" cy="28" rx="20" ry="12" fill="#ffffff" opacity="0.25"/><line x1="26" y1="38" x2="40" y2="44" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/><line x1="74" y1="38" x2="60" y2="44" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/><circle cx="34" cy="50" r="5" fill="#1a1a1a"/><circle cx="66" cy="50" r="5" fill="#1a1a1a"/><path d="M32 70 Q50 60 68 70 Q50 66 32 70 Z" fill="#1a1a1a"/></svg>';
+    const SVG_PURPLE = '<svg viewBox="0 0 100 100" width="100%" height="100%"><defs><radialGradient id="gPurple" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="#D8B4FE"/><stop offset="55%" stop-color="#9333EA"/><stop offset="100%" stop-color="#5B1A8C"/></radialGradient></defs><circle cx="50" cy="50" r="47" fill="url(#gPurple)"/><ellipse cx="38" cy="28" rx="20" ry="12" fill="#ffffff" opacity="0.22"/><line x1="24" y1="40" x2="42" y2="47" stroke="#1a1a1a" stroke-width="4.5" stroke-linecap="round"/><line x1="76" y1="40" x2="58" y2="47" stroke="#1a1a1a" stroke-width="4.5" stroke-linecap="round"/><circle cx="34" cy="52" r="5.5" fill="#1a1a1a"/><circle cx="66" cy="52" r="5.5" fill="#1a1a1a"/><path d="M30 64 Q50 60 70 64 Q68 78 50 78 Q32 78 30 64 Z" fill="#1a1a1a"/><line x1="38" y1="66" x2="38" y2="73" stroke="#D8B4FE" stroke-width="2.5"/><line x1="46" y1="65" x2="46" y2="75" stroke="#D8B4FE" stroke-width="2.5"/><line x1="54" y1="65" x2="54" y2="75" stroke="#D8B4FE" stroke-width="2.5"/><line x1="62" y1="66" x2="62" y2="73" stroke="#D8B4FE" stroke-width="2.5"/></svg>';
+
+    const C_LOWER    = { label:'LOWER',    color:'#22C55E', bg:'#DCFCE7', border:'#16803C', svg:SVG_GREEN };
+    const C_LOW      = { label:'LOW',      color:'#EAB308', bg:'#FEF3C7', border:'#A5730A', svg:SVG_YELLOW };
+    const C_MODERATE = { label:'MODERATE', color:'#F97316', bg:'#FFEDD5', border:'#B4530A', svg:SVG_ORANGE };
+    const C_HIGH     = { label:'HIGH',     color:'#EF4444', bg:'#FEE2E2', border:'#9B1C1C', svg:SVG_RED };
+    const C_HIGHER   = { label:'HIGHER',   color:'#9333EA', bg:'#F3E8FF', border:'#5B1A8C', svg:SVG_PURPLE };
+
+    if (param === 'ph') {
+        if (val < 5.5) return C_LOWER;
+        if (val < 6.5) return C_LOW;
+        if (val <= 7.5) return C_MODERATE;
+        if (val <= 8.5) return C_HIGH;
+        return C_HIGHER;
+    } else if (param === 'ec') {
+        if (val < 0.2) return C_LOWER;
+        if (val <= 0.8) return C_MODERATE;
+        if (val <= 1.6) return C_HIGH;
+        if (val <= 2.5) return C_LOW;
+        return C_HIGHER;
+    } else if (param === 'organic_carbon') {
+        if (val < 0.25) return C_LOWER;
+        if (val <= 0.50) return C_LOW;
+        if (val <= 0.75) return C_MODERATE;
+        if (val <= 1.0) return C_HIGH;
+        return C_HIGHER;
+    } else if (param === 'nitrogen') {
+        if (val < 140) return C_LOWER;
+        if (val < 280) return C_LOW;
+        if (val <= 420) return C_MODERATE;
+        if (val <= 560) return C_HIGH;
+        return C_HIGHER;
+    } else if (param === 'phosphorus') {
+        if (val < 5) return C_LOWER;
+        if (val < 10) return C_LOW;
+        if (val <= 17.5) return C_MODERATE;
+        if (val <= 25) return C_HIGH;
+        return C_HIGHER;
+    } else if (param === 'potassium') {
+        if (val < 60) return C_LOWER;
+        if (val < 120) return C_LOW;
+        if (val <= 200) return C_MODERATE;
+        if (val <= 280) return C_HIGH;
+        return C_HIGHER;
+    } else if (param === 'sulphur') {
+        if (val < 5) return C_LOWER;
+        if (val < 10) return C_LOW;
+        if (val <= 15) return C_MODERATE;
+        if (val <= 20) return C_HIGH;
+        return C_HIGHER;
+    } else if (param === 'zinc') {
+        if (val < 0.3) return C_LOWER;
+        if (val < 0.6) return C_LOW;
+        if (val <= 1.0) return C_MODERATE;
+        if (val <= 1.5) return C_HIGH;
+        return C_HIGHER;
+    } else if (param === 'boron') {
+        if (val < 0.25) return C_LOWER;
+        if (val < 0.5) return C_LOW;
+        if (val <= 0.75) return C_MODERATE;
+        if (val <= 1.0) return C_HIGH;
+        return C_HIGHER;
+    } else if (param === 'iron') {
+        if (val < 2.5) return C_LOWER;
+        if (val < 4.5) return C_LOW;
+        if (val <= 7.5) return C_MODERATE;
+        if (val <= 10.0) return C_HIGH;
+        return C_HIGHER;
+    } else if (param === 'manganese') {
+        if (val < 1.0) return C_LOWER;
+        if (val < 2.0) return C_LOW;
+        if (val <= 3.5) return C_MODERATE;
+        if (val <= 5.0) return C_HIGH;
+        return C_HIGHER;
+    } else if (param === 'copper') {
+        if (val < 0.1) return C_LOWER;
+        if (val < 0.2) return C_LOW;
+        if (val <= 0.5) return C_MODERATE;
+        if (val <= 0.8) return C_HIGH;
+        return C_HIGHER;
+    }
+    return null;
+}
+
 function buildSummary() {
     const items = [
-        { label:'pH', id:'ph', unit:'' }, { label:'EC', id:'ec', unit:'dS/m' },
+        { label:'pH', id:'ph', unit:'' }, { label:'EC', id:'ec', unit:'mS/cm' },
         { label:'Nitrogen', id:'nitrogen', unit:'kg/ha' }, { label:'Phosphorus', id:'phosphorus', unit:'kg/ha' },
         { label:'Potassium', id:'potassium', unit:'kg/ha' }, { label:'Organic Carbon', id:'organic_carbon', unit:'%' },
         { label:'Boron', id:'boron', unit:'ppm' }, { label:'Sulphur', id:'sulphur', unit:'ppm' },
         { label:'Zinc', id:'zinc', unit:'ppm' }, { label:'Iron', id:'iron', unit:'ppm' },
         { label:'Manganese', id:'manganese', unit:'ppm' }, { label:'Copper', id:'copper', unit:'ppm' },
     ];
-    document.getElementById('result-grid').innerHTML = items.map(i => `
-        <div class="result-item">
-            <div class="r-label">${i.label}</div>
-            <div class="r-value">${document.getElementById(i.id).value || '—'}</div>
-            <div class="r-unit">${i.unit}</div>
-        </div>`).join('');
+    document.querySelector('#result-table tbody').innerHTML = items.map(i => {
+        const valStr = document.getElementById(i.id).value || '';
+        const r = getJSParamRating(i.id, valStr);
+        const ratingHtml = r ? `
+            <span class="badge" style="background:${r.bg}; color:${r.color}; border:1px solid ${r.border}; font-weight:700; font-size:11px; padding:3px 9px; border-radius:12px; display:inline-flex; align-items:center; gap:6px;">
+                <span style="width:18px; height:18px; display:inline-flex; align-items:center;">${r.svg}</span>
+                <span>${r.label}</span>
+            </span>` : `<span style="color:#94A3B8; font-size:11px">—</span>`;
+
+        return `
+        <tr>
+            <td class="rt-label">${i.label}</td>
+            <td class="rt-value">${valStr || '—'}</td>
+            <td class="rt-unit">${i.unit}</td>
+            <td class="rt-rating" style="text-align:right; padding-left:12px;">${ratingHtml}</td>
+        </tr>`;
+    }).join('');
+
     const cat = getCategory(
         parseFloat(document.getElementById('ph').value),
         parseFloat(document.getElementById('nitrogen').value),
@@ -626,6 +895,18 @@ function updateUI() {
         if (s === currentStep) el.classList.add('active');
     });
     document.getElementById('step-counter').textContent = `Step ${currentStep} of ${TOTAL}`;
+
+    // Mobile compact stepper — 7 discrete segments
+    const STEP_NAMES = ['Sample Info', 'pH + EC', 'Nitrogen', 'P + K', 'OC + B + S', 'AAS Metals', 'Review & Save'];
+    document.getElementById('mobile-stepper-count').textContent = `STEP ${currentStep} / ${TOTAL}`;
+    document.getElementById('mobile-stepper-name').textContent = STEP_NAMES[currentStep - 1];
+    document.querySelectorAll('.mobile-stepper-seg').forEach(seg => {
+        seg.classList.remove('done', 'active');
+        const s = parseInt(seg.dataset.seg);
+        if (s < currentStep) seg.classList.add('done');
+        else if (s === currentStep) seg.classList.add('active');
+    });
+
     document.getElementById('btn-prev').disabled = currentStep === 1;
     const last = currentStep === TOTAL;
     document.getElementById('btn-next').style.display  = last ? 'none' : '';
@@ -645,7 +926,6 @@ async function saveSample() {
         farmer_name: s('farmer_name'), village: s('village'),
         sample_type: s('sample_type'),
         collection_date: getCollectionDate(),   // ← uses active mode
-        temperature: g('temperature'), moisture: g('moisture'),
         ph: g('ph'), observed_ec: g('observed_ec'), ec_temperature: g('ec_temperature'), ec: g('ec'),
         n_burette_a: g('n_burette_a'), n_burette_b: g('n_burette_b'), nitrogen: g('nitrogen'),
         abs_phosphorus: g('abs_phosphorus'), phosphorus: g('phosphorus'),
@@ -658,6 +938,7 @@ async function saveSample() {
         abs_manganese: g('abs_manganese'), manganese: g('manganese'),
         abs_copper: g('abs_copper'), copper: g('copper'),
         notes: s('notes'),
+        analyzed_by: s('analyzed_by'), checked_by: s('checked_by'), approved_by: s('approved_by'),
     };
 
     const url = (isUpdate && sid) ? `/api/update-sample/${sid}` : '/api/save-sample';
@@ -665,7 +946,15 @@ async function saveSample() {
     btn.disabled = true; btn.textContent = '⏳ Saving…';
 
     try {
-        const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const r = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(payload)
+        });
         const d = await r.json();
         if (d.success) {
             showToast(`✅ Sample ${d.sample_id} saved!`);
@@ -686,6 +975,18 @@ function showToast(msg) {
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3000);
 }
+
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('show');
+    document.getElementById('sidebarOverlay').classList.add('show');
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('show');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+}
+window.addEventListener('resize', function () {
+    if (window.innerWidth > 768) closeSidebar();
+});
 </script>
 </body>
 </html>

@@ -2,280 +2,656 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Soil Health Card - {{ sample.farmer_name }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SOIL HEALTH CARD - {{ sample.farmer_name or sample.sample_id }}</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f0f0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #EAE6DF; color: #1E293B; }
 
-        .page { width: 210mm; min-height: 297mm; margin: 20px auto; background: white; padding: 16mm; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+        .page {
+            width: 210mm;
+            min-height: 297mm; /* Standard Portrait format matching user's screenshot */
+            margin: 20px auto;
+            background: white;
+            padding: 12mm 14mm;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+            border-radius: 4px;
+            position: relative;
+        }
 
         /* Header */
-        .header { text-align: center; border-bottom: 3px solid #4A7C59; padding-bottom: 12px; margin-bottom: 16px; }
-        .header .gov-title { font-size: 13px; color: #555; font-weight: 600; margin-bottom: 4px; }
-        .header h1 { font-size: 26px; font-weight: 800; color: #4A7C59; letter-spacing: 1px; margin-bottom: 2px; }
-        .header .subtitle { font-size: 12px; color: #888; }
-        .header .card-no { font-size: 12px; color: #4A7C59; font-weight: 700; margin-top: 6px; }
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2.5px solid #166534;
+            padding-bottom: 10px;
+            margin-bottom: 14px;
+        }
+        .header-title-box h1 {
+            font-size: 20px;
+            font-weight: 900;
+            color: #166534;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .header-title-box .center-name {
+            font-size: 11px;
+            font-weight: 700;
+            color: #0F172A;
+            margin-top: 2px;
+        }
+        .header-title-box .address-line {
+            font-size: 9.5px;
+            color: #475569;
+            margin-top: 1px;
+        }
+        
+        .header-meta-box {
+            text-align: center;
+            font-size: 10px;
+            color: #334155;
+            line-height: 1.4;
+        }
+        .header-meta-box strong { color: #0F172A; }
 
-        /* Farmer Info */
-        .farmer-section { background: #F4F1EB; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
-        .farmer-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-        .farmer-item .label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
-        .farmer-item .value { font-size: 14px; font-weight: 700; color: #1A1814; margin-top: 2px; }
+        .gov-emblem-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .emblem-icon {
+            font-size: 24px;
+            line-height: 1;
+        }
+        .gov-text {
+            font-size: 9.5px;
+            font-weight: 700;
+            color: #1E293B;
+            line-height: 1.2;
+            text-align: right;
+        }
 
-        /* Section Title */
-        .section-title { font-size: 11px; font-weight: 800; color: #4A7C59; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; border-left: 3px solid #4A7C59; padding-left: 8px; }
+        /* 2 Column Body Grid */
+        .main-card-grid {
+            display: grid;
+            grid-template-columns: 2.2fr 3.8fr;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
 
-        /* Table */
-        table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; }
-        thead tr { background: #4A7C59; color: white; }
-        thead th { padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
-        tbody tr:nth-child(even) { background: #F9F8F5; }
-        tbody td { padding: 7px 10px; border-bottom: 1px solid #EEE; color: #1A1814; }
+        /* Left Column: Sample & Farmer Info */
+        .info-panel {
+            background: #F8FAFC;
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 10px;
+        }
+        .panel-heading {
+            font-size: 11px;
+            font-weight: 800;
+            color: #166534;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1.5px solid #166534;
+            padding-bottom: 3px;
+            margin-bottom: 8px;
+        }
+        .info-row {
+            margin-bottom: 6px;
+            line-height: 1.35;
+        }
+        .info-label {
+            font-size: 9px;
+            color: #64748B;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .info-value {
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #0F172A;
+        }
 
-        .status-high   { background: #E6F2EA; color: #2D5A3D; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
-        .status-medium { background: #FDF4E3; color: #7A5010; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
-        .status-low    { background: #FCEAEA; color: #A83030; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+        /* Right Column: Parameter Grid Cards */
+        .params-heading {
+            font-size: 11px;
+            font-weight: 800;
+            color: #166534;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1.5px solid #166534;
+            padding-bottom: 3px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .param-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 7px;
+            margin-bottom: 8px;
+        }
 
-        /* Recommendation */
-        .rec-box { border: 1px solid #4A7C59; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
-        .rec-box .rec-title { font-size: 11px; font-weight: 800; color: #4A7C59; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-        .rec-items { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-        .rec-item { font-size: 12px; color: #333; padding: 4px 0; }
-        .rec-item::before { content: "✓ "; color: #4A7C59; font-weight: 700; }
+        .param-card {
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
+            padding: 7px 8px;
+            background: #FFFFFF;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-        /* Footer */
-        .footer { border-top: 2px solid #4A7C59; padding-top: 10px; display: flex; justify-content: space-between; align-items: flex-end; }
-        .sign-box { text-align: center; }
-        .sign-line { border-top: 1px solid #333; width: 150px; margin: 30px auto 4px; }
-        .sign-label { font-size: 10px; color: #888; }
-        .stamp-box { width: 80px; height: 80px; border: 2px dashed #ccc; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #ccc; }
+        .param-card-left {
+            flex-grow: 1;
+            overflow: hidden;
+        }
+        .param-name {
+            font-size: 9px;
+            font-weight: 800;
+            color: #0F172A;
+            text-transform: uppercase;
+            line-height: 1.15;
+        }
+        .param-val {
+            font-size: 14px;
+            font-weight: 900;
+            color: #0F172A;
+            margin: 1px 0;
+        }
+        .param-val span {
+            font-size: 9px;
+            font-weight: 600;
+            color: #64748B;
+        }
+        .param-range {
+            font-size: 8.5px;
+            font-weight: 700;
+            color: #475569;
+        }
 
-        /* Action Buttons */
-        .action-bar { text-align: center; padding: 16px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-        .btn-back   { background: #F4F1EB; color: #4A7C59; border: 1px solid #4A7C59; padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; }
-        .btn-print  { background: #4A7C59; color: white; border: none; padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
-        .btn-pdf    { background: #B84A4A; color: white; border: none; padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-        .btn-pdf:hover  { background: #9a3a3a; }
-        .btn-print:hover { background: #3A6B4A; }
+        /* 2-Ring Circular Rating Dot & Emoji Badge */
+        .rating-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-left: 4px;
+            transition: all 0.2s ease;
+        }
+        .rating-dot-inner {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
 
-        /* Loading spinner */
-        .pdf-loading { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+        /* Measured Scale Legend (5 Clean Categories Single Row) */
+        .scale-legend {
+            background: #F8FAFC;
+            border: 1px solid #CBD5E1;
+            border-radius: 6px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            font-size: 9px;
+            font-weight: 700;
+            color: #334155;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+        .legend-dot-icon {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* Recommendation Section */
+        .rec-section {
+            border: 1.5px solid #166534;
+            border-radius: 8px;
+            padding: 8px 12px;
+            background: #F0FDF4;
+            margin-bottom: 10px;
+        }
+        .rec-header-title {
+            font-size: 11px;
+            font-weight: 900;
+            color: #166534;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+        .rec-subnote {
+            font-size: 8.5px;
+            color: #475569;
+            font-style: italic;
+            margin-bottom: 6px;
+        }
+        
+        .rec-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.4fr;
+            gap: 8px;
+        }
+        .rec-column {
+            background: white;
+            border: 1px solid #BBF7D0;
+            border-radius: 6px;
+            padding: 6px 8px;
+        }
+        .rec-col-title {
+            font-size: 9.5px;
+            font-weight: 800;
+            color: #166534;
+            border-bottom: 1px solid #DCFCE7;
+            padding-bottom: 2px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+        .rec-item-list {
+            list-style: none;
+            font-size: 9px;
+            color: #1E293B;
+            line-height: 1.4;
+        }
+        .rec-item-list li::before {
+            content: "• ";
+            color: #166534;
+            font-weight: 800;
+        }
+
+        /* Footer & Signatures (Ample Signature Space Fix) */
+        .card-footer-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 18px;
+            padding-top: 12px;
+            border-top: 1px solid #E2E8F0;
+        }
+        .disclaimer-text {
+            font-size: 7px;
+            color: #64748B;
+            max-width: 52%;
+            line-height: 1.25;
+            font-weight: 500;
+        }
+        .sign-group {
+            display: flex;
+            gap: 28px;
+        }
+        .sign-item {
+            text-align: center;
+            min-width: 105px;
+        }
+        .sign-space {
+            height: 48px; /* Generous 48px vertical blank space to physically sign or stamp */
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #0F172A;
+            padding-bottom: 4px;
+        }
+        .sign-line {
+            width: 105px;
+            border-top: 1.5px solid #334155;
+            margin: 0 auto 3px;
+        }
+        .sign-role {
+            color: #475569;
+            font-size: 9px;
+            font-weight: 700;
+        }
+
+        /* Action bar for printing */
+        .action-bar {
+            text-align: center;
+            padding: 12px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+        .btn-back { background: #FFFFFF; color: #166534; border: 1px solid #166534; padding: 7px 18px; border-radius: 8px; font-size: 12.5px; font-weight: 700; text-decoration: none; cursor: pointer; }
+        .btn-print { background: #166534; color: white; border: none; padding: 7px 18px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+        .btn-pdf { background: #B91C1C; color: white; border: none; padding: 7px 18px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+
+        .pdf-loading { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
         .pdf-loading.show { display: flex; }
         .spinner { width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; animation: spin 0.8s linear infinite; }
-        .pdf-loading p { color: white; font-size: 15px; font-weight: 600; font-family: 'Segoe UI', sans-serif; }
+        .pdf-loading p { color: white; font-size: 15px; font-weight: 600; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Print */
+        @media screen and (max-width: 768px) {
+            body { padding: 10px 4px; }
+            .page {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-height: auto !important;
+                padding: 12px 10px !important;
+                margin: 0 auto !important;
+                box-shadow: none !important;
+                border: 1px solid #166534 !important;
+            }
+            .college-name { font-size: 11px !important; }
+            .dept-title { font-size: 9.5px !important; }
+            .card-title { font-size: 11px !important; }
+            .info-box {
+                grid-template-columns: 1fr !important;
+                gap: 8px !important;
+            }
+            .info-item {
+                font-size: 9px !important;
+            }
+            .params-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 6px !important;
+            }
+            .param-card {
+                padding: 5px 6px !important;
+            }
+            .param-name {
+                font-size: 9px !important;
+            }
+            .param-val {
+                font-size: 11px !important;
+            }
+            .scale-legend {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                justify-content: center !important;
+                gap: 8px 12px !important;
+                font-size: 8px !important;
+                padding: 6px !important;
+            }
+            .rec-grid {
+                grid-template-columns: 1fr !important;
+                gap: 8px !important;
+            }
+            .card-footer-box {
+                flex-direction: column !important;
+                align-items: center !important;
+                gap: 14px !important;
+                text-align: center !important;
+            }
+            .disclaimer-text {
+                max-width: 100% !important;
+                text-align: center !important;
+            }
+            .sign-group {
+                width: 100% !important;
+                justify-content: space-around !important;
+                gap: 10px !important;
+            }
+            .action-bar {
+                flex-direction: column !important;
+                gap: 8px !important;
+                padding: 8px !important;
+            }
+            .action-bar button, .action-bar a {
+                width: 100% !important;
+                text-align: center !important;
+                justify-content: center !important;
+            }
+        }
+
         @media print {
             body { background: white; }
-            .page { margin: 0; box-shadow: none; padding: 12mm; }
+            .page { margin: 0; box-shadow: none; padding: 8mm 10mm; width: 100%; height: auto; }
             .no-print { display: none !important; }
         }
     </style>
 </head>
 <body>
 
-<!-- Loading overlay for PDF -->
+<!-- PDF Spinner -->
 <div class="pdf-loading" id="pdf-loading">
     <div class="spinner"></div>
-    <p>Generating PDF... Please wait</p>
+    <p>Generating Official Soil Health Card PDF...</p>
 </div>
 
-<!-- Action Buttons -->
+<!-- Print Action Bar -->
 <div class="action-bar no-print">
-    <a href="/sample/{{ sample.id }}" class="btn-back">← Back</a>
-    <button onclick="window.print()" class="btn-print">🖨️ Print Card</button>
+    <a href="/sample/{{ sample.id }}" class="btn-back">← Back to Sample</a>
+    <button onclick="window.print()" class="btn-print">🖨️ Print Report</button>
     <button onclick="downloadPDF()" class="btn-pdf">📄 Download PDF</button>
 </div>
 
-<!-- Health Card Page -->
+<!-- Soil Health Card Document -->
 <div class="page" id="health-card">
 
-    <!-- Header -->
-    <div class="header">
-        <div class="gov-title">Government of Maharashtra — Soil Health Card Scheme</div>
-        <h1>🌱 SOIL HEALTH CARD</h1>
-        <div class="subtitle">Chemistry Department — SoilTrack System</div>
-        <div class="card-no">Card No: {{ sample.sample_id }} &nbsp;|&nbsp; Year: {{ sample.collection_date }}</div>
+    <!-- Top Header -->
+    <div class="top-header">
+        <div class="header-title-box">
+            <h1>🌱 SOIL HEALTH CARD</h1>
+            <div class="center-name">Center Name: District Soil Survey And Soil Testing Office Ratnagiri</div>
+            <div class="address-line">Address: SH 08, Pomendi, Ratnagiri, Maharashtra, 415639, India</div>
+        </div>
+
+        <div class="header-meta-box">
+            <div><strong>Test ID:</strong> {{ sample.sample_id }}</div>
+            <div><strong>Testing Date:</strong> {{ sample.collection_date or '2025-2026' }}</div>
+            <div><strong>Validity:</strong> 3 years or 3 crop seasons</div>
+        </div>
+
+        <div class="gov-emblem-box">
+            <div class="emblem-icon">🏛️</div>
+            <div class="gov-text">
+                Government of India<br>
+                Ministry of Agriculture & Farmers Welfare<br>
+                Department of Agriculture & Farmers Welfare
+            </div>
+        </div>
     </div>
 
-    <!-- Farmer Info -->
-    <div class="farmer-section">
-        <div class="farmer-grid">
-            <div class="farmer-item">
-                <div class="label">Farmer Name</div>
-                <div class="value">{{ sample.farmer_name or '—' }}</div>
+    <!-- Main Content Layout -->
+    <div class="main-card-grid">
+
+        <!-- Left Column: Sample & Farmer Info -->
+        <div class="info-panel">
+            <div class="panel-heading">SAMPLE INFORMATION</div>
+            <div class="info-row">
+                <div class="info-label">SURVEY NO</div>
+                <div class="info-value">{{ sample.survey_number or '4/3' }}</div>
             </div>
-            <div class="farmer-item">
-                <div class="label">Village</div>
-                <div class="value">{{ sample.village or '—' }}</div>
+            <div class="info-row">
+                <div class="info-label">PLOT ADDRESS</div>
+                <div class="info-value">{{ sample.village or 'Jambhulwadi' }}, Sangameshwar, Ratnagiri</div>
             </div>
-            <div class="farmer-item">
-                <div class="label">Sample Type</div>
-                <div class="value">{{ sample.sample_type or 'Soil' }}</div>
+            <div class="info-row">
+                <div class="info-label">SAMPLING DATE</div>
+                <div class="info-value">{{ sample.collection_date or '2025-2026' }}</div>
             </div>
-            <div class="farmer-item">
-                <div class="label">Sample ID</div>
-                <div class="value" style="font-family:monospace">{{ sample.sample_id }}</div>
+            <div class="info-row">
+                <div class="info-label">GEO POSITION (GPS)</div>
+                <div class="info-value" style="font-family:monospace">17.063663, 73.581232</div>
             </div>
-            <div class="farmer-item">
-                <div class="label">Collection Date</div>
-                <div class="value">{{ sample.collection_date or '—' }}</div>
+
+            <div class="panel-heading" style="margin-top: 14px;">CARD ISSUED TO</div>
+            <div class="info-row">
+                <div class="info-label">FARMER NAME</div>
+                <div class="info-value">{{ sample.farmer_name or 'Sharada Krushna Kardode' }}</div>
             </div>
-            <div class="farmer-item">
-                <div class="label">Overall Status</div>
-                <div class="value">
-                    {% if sample.category == 'Fertile' %}🟢 Fertile
-                    {% elif sample.category == 'Moderate' %}🟡 Moderate
-                    {% else %}🔴 Poor{% endif %}
+            <div class="info-row">
+                <div class="info-label">PHONE NUMBER</div>
+                <div class="info-value">{{ sample.phone_number or '+91 9******7579' }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">ADDRESS</div>
+                <div class="info-value">{{ sample.address or sample.village or 'Jambhulwadi' }}, Sangameshwar, Ratnagiri</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">PLOT SIZE</div>
+                <div class="info-value">0.530 Hectare</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">SOIL TYPE</div>
+                <div class="info-value">Laterite Soil</div>
+            </div>
+        </div>
+
+        <!-- Right Column: Parameter Grid Cards (5 Categories & Emojis!) -->
+        <div>
+            <div class="params-heading">
+                <span>SOIL SAMPLE DETAILS</span>
+                <span style="font-size:9px; font-weight:600; color:#475569">RATING SCALE & RANGE</span>
+            </div>
+
+            <div class="param-cards-grid">
+                {% set p_map = [
+                    ('nitrogen', 'AVAILABLE NITROGEN (N)', 'kg/ha', sample.nitrogen),
+                    ('phosphorus', 'AVAILABLE PHOSPHORUS (P)', 'kg/ha', sample.phosphorus),
+                    ('potassium', 'AVAILABLE POTASSIUM (K)', 'kg/ha', sample.potassium),
+                    ('ph', 'PH (pH)', '', sample.ph),
+                    ('ec', 'EC (EC)', 'dS/m', sample.ec),
+                    ('organic_carbon', 'ORGANIC CARBON (OC)', '%', sample.organic_carbon),
+                    ('sulphur', 'AVAILABLE SULPHUR (S)', 'ppm', sample.sulphur),
+                    ('zinc', 'AVAILABLE ZINC (Zn)', 'ppm', sample.zinc),
+                    ('boron', 'AVAILABLE BORON (B)', 'ppm', sample.boron),
+                    ('iron', 'AVAILABLE IRON (Fe)', 'ppm', sample.iron),
+                    ('manganese', 'AVAILABLE MANGANESE (Mn)', 'ppm', sample.manganese),
+                    ('copper', 'AVAILABLE COPPER (Cu)', 'ppm', sample.copper)
+                ] %}
+
+                {% for p_key, p_name, p_unit, p_val in p_map %}
+                {% set r = param_ratings.get(p_key) %}
+                <div class="param-card">
+                    <div class="param-card-left">
+                        <div class="param-name">{{ p_name }}</div>
+                        <div class="param-val">
+                            {{ p_val if p_val is not none else '—' }} <span>{{ p_unit }}</span>
+                        </div>
+                        <div class="param-range">RANGE : {{ r.range if r else '—' }}</div>
+                    </div>
+                    {% if r %}
+                    <div class="rating-dot" style="background: {{ r.bg }}; border: 1.5px solid {{ r.border }};" title="{{ r.label }}">
+                        <div style="width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center;">
+                            {{ r.svg|safe }}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="rating-dot" style="background: rgba(148, 163, 184, 0.2); border: 1.5px solid #CBD5E1;" title="Not Available">
+                        <div class="rating-dot-inner" style="background: #94A3B8;"></div>
+                    </div>
+                    {% endif %}
                 </div>
+                {% endfor %}
+            </div>
+
+            <!-- Measured Scale Legend (5 Clean Categories) -->
+            <div class="scale-legend">
+                <span class="legend-item"><span style="width:18px; height:18px; display:inline-flex; align-items:center;"><svg viewBox="0 0 100 100" width="100%" height="100%"><defs><radialGradient id="lgGreen" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="#86EFAC"/><stop offset="55%" stop-color="#22C55E"/><stop offset="100%" stop-color="#16803C"/></radialGradient></defs><circle cx="50" cy="50" r="47" fill="url(#lgGreen)"/><ellipse cx="38" cy="28" rx="20" ry="12" fill="#ffffff" opacity="0.28"/><circle cx="34" cy="46" r="5.5" fill="#1a1a1a"/><circle cx="66" cy="46" r="5.5" fill="#1a1a1a"/><path d="M30 60 Q50 82 70 60 Q68 76 50 76 Q32 76 30 60 Z" fill="#7A1F1F"/><path d="M33 61 Q50 72 67 61" stroke="#ffffff" stroke-width="4" fill="none" stroke-linecap="round"/></svg></span> <strong style="color:#22C55E">LOWER</strong></span>
+                <span class="legend-item"><span style="width:18px; height:18px; display:inline-flex; align-items:center;"><svg viewBox="0 0 100 100" width="100%" height="100%"><defs><radialGradient id="lgYellow" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="#FDE68A"/><stop offset="55%" stop-color="#EAB308"/><stop offset="100%" stop-color="#A5730A"/></radialGradient></defs><circle cx="50" cy="50" r="47" fill="url(#lgYellow)"/><ellipse cx="38" cy="28" rx="20" ry="12" fill="#ffffff" opacity="0.3"/><circle cx="34" cy="46" r="5" fill="#1a1a1a"/><circle cx="66" cy="46" r="5" fill="#1a1a1a"/><path d="M32 62 Q50 74 68 62" stroke="#1a1a1a" stroke-width="4.5" fill="none" stroke-linecap="round"/></svg></span> <strong style="color:#EAB308">LOW</strong></span>
+                <span class="legend-item"><span style="width:18px; height:18px; display:inline-flex; align-items:center;"><svg viewBox="0 0 100 100" width="100%" height="100%"><defs><radialGradient id="lgOrange" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="#FDBA74"/><stop offset="55%" stop-color="#F97316"/><stop offset="100%" stop-color="#B4530A"/></radialGradient></defs><circle cx="50" cy="50" r="47" fill="url(#lgOrange)"/><ellipse cx="38" cy="28" rx="20" ry="12" fill="#ffffff" opacity="0.28"/><circle cx="34" cy="46" r="5" fill="#1a1a1a"/><circle cx="66" cy="46" r="5" fill="#1a1a1a"/><line x1="33" y1="65" x2="67" y2="65" stroke="#1a1a1a" stroke-width="4.5" stroke-linecap="round"/></svg></span> <strong style="color:#F97316">MODERATE</strong></span>
+                <span class="legend-item"><span style="width:18px; height:18px; display:inline-flex; align-items:center;"><svg viewBox="0 0 100 100" width="100%" height="100%"><defs><radialGradient id="lgRed" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="#FCA5A5"/><stop offset="55%" stop-color="#EF4444"/><stop offset="100%" stop-color="#9B1C1C"/></radialGradient></defs><circle cx="50" cy="50" r="47" fill="url(#lgRed)"/><ellipse cx="38" cy="28" rx="20" ry="12" fill="#ffffff" opacity="0.25"/><line x1="26" y1="38" x2="40" y2="44" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/><line x1="74" y1="38" x2="60" y2="44" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/><circle cx="34" cy="50" r="5" fill="#1a1a1a"/><circle cx="66" cy="50" r="5" fill="#1a1a1a"/><path d="M32 70 Q50 60 68 70 Q50 66 32 70 Z" fill="#1a1a1a"/></svg></span> <strong style="color:#EF4444">HIGH</strong></span>
+                <span class="legend-item"><span style="width:18px; height:18px; display:inline-flex; align-items:center;"><svg viewBox="0 0 100 100" width="100%" height="100%"><defs><radialGradient id="lgPurple" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="#D8B4FE"/><stop offset="55%" stop-color="#9333EA"/><stop offset="100%" stop-color="#5B1A8C"/></radialGradient></defs><circle cx="50" cy="50" r="47" fill="url(#lgPurple)"/><ellipse cx="38" cy="28" rx="20" ry="12" fill="#ffffff" opacity="0.22"/><line x1="24" y1="40" x2="42" y2="47" stroke="#1a1a1a" stroke-width="4.5" stroke-linecap="round"/><line x1="76" y1="40" x2="58" y2="47" stroke="#1a1a1a" stroke-width="4.5" stroke-linecap="round"/><circle cx="34" cy="52" r="5.5" fill="#1a1a1a"/><circle cx="66" cy="52" r="5.5" fill="#1a1a1a"/><path d="M30 64 Q50 60 70 64 Q68 78 50 78 Q32 78 30 64 Z" fill="#1a1a1a"/><line x1="38" y1="66" x2="38" y2="73" stroke="#D8B4FE" stroke-width="2.5"/><line x1="46" y1="65" x2="46" y2="75" stroke="#D8B4FE" stroke-width="2.5"/><line x1="54" y1="65" x2="54" y2="75" stroke="#D8B4FE" stroke-width="2.5"/><line x1="62" y1="66" x2="62" y2="73" stroke="#D8B4FE" stroke-width="2.5"/></svg></span> <strong style="color:#9333EA">HIGHER</strong></span>
             </div>
         </div>
+
     </div>
 
-    <!-- Physical Properties -->
-    <div class="section-title">Physical Properties</div>
-    <table>
-        <thead>
-            <tr><th>Parameter</th><th>Value</th><th>Unit</th><th>Normal Range</th><th>Status</th></tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><strong>pH</strong></td>
-                <td>{{ sample.ph or '—' }}</td>
-                <td>—</td>
-                <td>6.5 – 7.5</td>
-                <td>{% if sample.ph %}{% if 6.5 <= sample.ph <= 7.5 %}<span class="status-high">Optimal</span>{% elif 6.0 <= sample.ph < 6.5 or 7.5 < sample.ph <= 8.0 %}<span class="status-medium">Acceptable</span>{% else %}<span class="status-low">Needs Correction</span>{% endif %}{% endif %}</td>
-            </tr>
-            <tr>
-                <td><strong>EC (Electrical Conductivity)</strong></td>
-                <td>{{ sample.ec or '—' }}</td>
-                <td>dS/m</td>
-                <td>0.2 – 0.8</td>
-                <td>{% if sample.ec %}{% if sample.ec <= 0.8 %}<span class="status-high">Normal</span>{% elif sample.ec <= 1.6 %}<span class="status-medium">Slightly High</span>{% else %}<span class="status-low">High</span>{% endif %}{% endif %}</td>
-            </tr>
-            <tr>
-                <td><strong>Organic Carbon</strong></td>
-                <td>{{ sample.organic_carbon or '—' }}</td>
-                <td>%</td>
-                <td>> 0.75%</td>
-                <td>{% if sample.organic_carbon %}{% if sample.organic_carbon >= 0.75 %}<span class="status-high">High</span>{% elif sample.organic_carbon >= 0.5 %}<span class="status-medium">Medium</span>{% else %}<span class="status-low">Low</span>{% endif %}{% endif %}</td>
-            </tr>
-        </tbody>
-    </table>
+    <!-- Recommendation Section -->
+    <div class="rec-section">
+        <div class="rec-header-title">RECOMMENDATION</div>
+        {% if recommendations.has_crop %}
+        <div class="rec-subnote">Note: Choose either the Organic Fertilizer Recommendation or one of the Fertilizer Combinations (1 or 2). Do not apply them together.</div>
 
-    <!-- Macro Nutrients -->
-    <div class="section-title">Macro Nutrients (NPK)</div>
-    <table>
-        <thead>
-            <tr><th>Nutrient</th><th>Value</th><th>Unit</th><th>Low / Medium / High</th><th>Status</th></tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><strong>Nitrogen (N)</strong></td>
-                <td>{{ sample.nitrogen or '—' }}</td>
-                <td>kg/ha</td>
-                <td>&lt;280 / 280–560 / &gt;560</td>
-                <td>{% if sample.nitrogen %}{% if sample.nitrogen >= 560 %}<span class="status-high">High</span>{% elif sample.nitrogen >= 280 %}<span class="status-medium">Medium</span>{% else %}<span class="status-low">Low</span>{% endif %}{% endif %}</td>
-            </tr>
-            <tr>
-                <td><strong>Phosphorus (P)</strong></td>
-                <td>{{ sample.phosphorus or '—' }}</td>
-                <td>kg/ha</td>
-                <td>&lt;11 / 11–22 / &gt;22</td>
-                <td>{% if sample.phosphorus %}{% if sample.phosphorus >= 22 %}<span class="status-high">High</span>{% elif sample.phosphorus >= 11 %}<span class="status-medium">Medium</span>{% else %}<span class="status-low">Low</span>{% endif %}{% endif %}</td>
-            </tr>
-            <tr>
-                <td><strong>Potassium (K)</strong></td>
-                <td>{{ sample.potassium or '—' }}</td>
-                <td>kg/ha</td>
-                <td>&lt;110 / 110–280 / &gt;280</td>
-                <td>{% if sample.potassium %}{% if sample.potassium >= 280 %}<span class="status-high">High</span>{% elif sample.potassium >= 110 %}<span class="status-medium">Medium</span>{% else %}<span class="status-low">Low</span>{% endif %}{% endif %}</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <!-- Micro Nutrients -->
-    <div class="section-title">Micro Nutrients</div>
-    <table>
-        <thead>
-            <tr><th>Nutrient</th><th>Value</th><th>Unit</th><th>Sufficiency Level</th><th>Status</th></tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><strong>Sulphur (S)</strong></td><td>{{ sample.sulphur or '—' }}</td><td>ppm</td><td>> 10 ppm</td>
-                <td>{% if sample.sulphur %}{% if sample.sulphur >= 10 %}<span class="status-high">Sufficient</span>{% else %}<span class="status-low">Deficient</span>{% endif %}{% endif %}</td>
-            </tr>
-            <tr>
-                <td><strong>Zinc (Zn)</strong></td><td>{{ sample.zinc or '—' }}</td><td>ppm</td><td>> 0.6 ppm</td>
-                <td>{% if sample.zinc %}{% if sample.zinc >= 0.6 %}<span class="status-high">Sufficient</span>{% else %}<span class="status-low">Deficient</span>{% endif %}{% endif %}</td>
-            </tr>
-            <tr>
-                <td><strong>Boron (B)</strong></td><td>{{ sample.boron or '—' }}</td><td>ppm</td><td>> 0.5 ppm</td>
-                <td>{% if sample.boron %}{% if sample.boron >= 0.5 %}<span class="status-high">Sufficient</span>{% else %}<span class="status-low">Deficient</span>{% endif %}{% endif %}</td>
-            </tr>
-            <tr>
-                <td><strong>Iron (Fe)</strong></td><td>{{ sample.iron or '—' }}</td><td>ppm</td><td>> 4.5 ppm</td>
-                <td>{% if sample.iron %}{% if sample.iron >= 4.5 %}<span class="status-high">Sufficient</span>{% else %}<span class="status-low">Deficient</span>{% endif %}{% endif %}</td>
-            </tr>
-            <tr>
-                <td><strong>Manganese (Mn)</strong></td><td>{{ sample.manganese or '—' }}</td><td>ppm</td><td>> 2.0 ppm</td>
-                <td>{% if sample.manganese %}{% if sample.manganese >= 2.0 %}<span class="status-high">Sufficient</span>{% else %}<span class="status-low">Deficient</span>{% endif %}{% endif %}</td>
-            </tr>
-            <tr>
-                <td><strong>Copper (Cu)</strong></td><td>{{ sample.copper or '—' }}</td><td>ppm</td><td>> 0.2 ppm</td>
-                <td>{% if sample.copper %}{% if sample.copper >= 0.2 %}<span class="status-high">Sufficient</span>{% else %}<span class="status-low">Deficient</span>{% endif %}{% endif %}</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <!-- Recommendations -->
-    <div class="rec-box">
-        <div class="rec-title">🌿 Fertiliser Recommendations</div>
-        <div class="rec-items">
-            {% if sample.nitrogen and sample.nitrogen < 280 %}<div class="rec-item">Apply Urea or DAP to increase Nitrogen</div>{% endif %}
-            {% if sample.phosphorus and sample.phosphorus < 11 %}<div class="rec-item">Apply SSP or DAP to increase Phosphorus</div>{% endif %}
-            {% if sample.potassium and sample.potassium < 110 %}<div class="rec-item">Apply MOP (Muriate of Potash) for Potassium</div>{% endif %}
-            {% if sample.organic_carbon and sample.organic_carbon < 0.75 %}<div class="rec-item">Add compost or FYM to improve Organic Carbon</div>{% endif %}
-            {% if sample.zinc and sample.zinc < 0.6 %}<div class="rec-item">Apply Zinc Sulphate @ 25 kg/ha</div>{% endif %}
-            {% if sample.boron and sample.boron < 0.5 %}<div class="rec-item">Apply Borax @ 10 kg/ha for Boron deficiency</div>{% endif %}
-            {% if sample.sulphur and sample.sulphur < 10 %}<div class="rec-item">Apply Elemental Sulphur or Gypsum</div>{% endif %}
-            {% if sample.ph and sample.ph < 6.0 %}<div class="rec-item">Apply Agricultural Lime to raise pH</div>{% endif %}
-            {% if sample.ph and sample.ph > 8.0 %}<div class="rec-item">Apply Gypsum or Sulphur to lower pH</div>{% endif %}
-            {% if sample.category == 'Fertile' %}
-            <div class="rec-item">Soil is healthy — maintain current practices</div>
-            <div class="rec-item">Re-test after 6 months for best results</div>
-            {% endif %}
+        <div style="font-size: 9.5px; font-weight: 800; color: #0F172A; margin-bottom: 5px;">
+            Target Crop: <span style="color:#166534">{{ recommendations.crop }}</span>
         </div>
+
+        <div class="rec-grid">
+            <div class="rec-column">
+                <div class="rec-col-title">Fertilizer Combination-1</div>
+                <ul class="rec-item-list">
+                    {% for item in recommendations.comb1 %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="rec-column">
+                <div class="rec-col-title">Fertilizer Combination-2</div>
+                <ul class="rec-item-list">
+                    {% for item in recommendations.comb2 %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="rec-column">
+                <div class="rec-col-title">Exclusive Organic Fertilizer Recommendations</div>
+                <ul class="rec-item-list">
+                    {% for item in recommendations.organic %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% else %}
+        <div style="padding: 14px; background: white; border: 1px dashed #A7F3D0; border-radius: 6px; text-align: center; color: #475569; font-size: 10px;">
+            ℹ️ <strong>No Target Crop Specified</strong> — No fertilizer recommendations generated. Please specify a crop name during sample entry or editing to generate tailored fertilizer recommendations.
+        </div>
+        {% endif %}
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-        <div class="sign-box">
-            <div class="sign-line"></div>
-            <div class="sign-label">Lab Technician Signature</div>
+    <!-- Footer & Signatures (Generous 48px Signature Area) -->
+    <div class="card-footer-box">
+        <div class="disclaimer-text">
+            DISCLAIMER: OUR REPORT IS NOT TO BE REPRODUCED WHOLLY OR IN PART AND CANNOT BE USED AS EVIDENCE IN THE COURT OF LAW AND SHOULD NOT BE USED IN ANY ADVERTISING MEDIA WITHOUT OUR PRIOR WRITTEN APPROVAL FOR FERTILIZER RECOMMENDATION SHOWN IN THIS REPORT IS FOR A FULL SEASON OF THE SELECTED CROP.
         </div>
-        <div class="stamp-box">STAMP</div>
-        <div class="sign-box">
-            <div class="sign-line"></div>
-            <div class="sign-label">Authorised Signatory</div>
+
+        <div class="sign-group">
+            <div class="sign-item">
+                <div class="sign-space">{{ sample.analyzed_by or '' }}</div>
+                <div class="sign-line"></div>
+                <div class="sign-role">Analyzed By (Lab Analyst)</div>
+            </div>
+            <div class="sign-item">
+                <div class="sign-space">{{ sample.checked_by or '' }}</div>
+                <div class="sign-line"></div>
+                <div class="sign-role">Checked By (Chemist)</div>
+            </div>
+            <div class="sign-item">
+                <div class="sign-space">{{ sample.approved_by or '' }}</div>
+                <div class="sign-line"></div>
+                <div class="sign-role">Approved By (Officer)</div>
+            </div>
         </div>
     </div>
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 function downloadPDF() {
     const loading = document.getElementById('pdf-loading');
     loading.classList.add('show');
 
     const element = document.getElementById('health-card');
-    const filename = 'SoilHealthCard_{{ sample.sample_id }}_{{ sample.farmer_name | replace(" ", "_") }}.pdf';
+    const filename = 'SoilHealthCard_{{ sample.sample_id }}.pdf';
 
     const opt = {
-        margin:       [5, 5, 5, 5],
+        margin:       [3, 3, 3, 3],
         filename:     filename,
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true, logging: false },
@@ -290,5 +666,6 @@ function downloadPDF() {
     });
 }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
