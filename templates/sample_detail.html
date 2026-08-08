@@ -229,17 +229,25 @@
     <div class="card mb-3">
         <div class="card-title">Soil Parameters</div>
         <div class="row g-3" id="params-row">
-            <div class="col-md-2"><div class="param-box"><div class="param-name">pH</div><div class="param-val">{{ sample.ph or '—' }}</div></div></div>
-            <div class="col-md-2"><div class="param-box"><div class="param-name">Nitrogen</div><div class="param-val">{{ sample.nitrogen or '—' }}</div><div class="param-unit">kg/ha</div></div></div>
-            <div class="col-md-2"><div class="param-box"><div class="param-name">Phosphorus</div><div class="param-val">{{ sample.phosphorus or '—' }}</div><div class="param-unit">kg/ha</div></div></div>
-            <div class="col-md-2"><div class="param-box"><div class="param-name">Potassium</div><div class="param-val">{{ sample.potassium or '—' }}</div><div class="param-unit">kg/ha</div></div></div>
-            <div class="col-md-2"><div class="param-box"><div class="param-name">Iron (Fe)</div><div class="param-val">{{ sample.iron or '—' }}</div><div class="param-unit">ppm</div></div></div>
-            <div class="col-md-2"><div class="param-box"><div class="param-name">Zinc (Zn)</div><div class="param-val">{{ sample.zinc or '—' }}</div><div class="param-unit">ppm</div></div></div>
-            <div class="col-md-2"><div class="param-box"><div class="param-name">Copper (Cu)</div><div class="param-val">{{ sample.copper or '—' }}</div><div class="param-unit">ppm</div></div></div>
-            <div class="col-md-2"><div class="param-box"><div class="param-name">Manganese</div><div class="param-val">{{ sample.manganese or '—' }}</div><div class="param-unit">ppm</div></div></div>
-            <div class="col-md-2"><div class="param-box"><div class="param-name">Boron (B)</div><div class="param-val">{{ sample.boron or '—' }}</div><div class="param-unit">ppm</div></div></div>
-            <div class="col-md-2"><div class="param-box"><div class="param-name">Org. Carbon</div><div class="param-val">{{ sample.organic_carbon or '—' }}</div><div class="param-unit">%</div></div></div>
-            <div class="col-md-2"><div class="param-box"><div class="param-name">Sulphur (S)</div><div class="param-val">{{ sample.sulphur or '—' }}</div><div class="param-unit">ppm</div></div></div>
+            {% set s_params = [
+                ('pH', sample.ph, ''),
+                ('Nitrogen', sample.nitrogen, 'kg/ha'),
+                ('Phosphorus', sample.phosphorus, 'kg/ha'),
+                ('Potassium', sample.potassium, 'kg/ha'),
+                ('Org. Carbon', sample.organic_carbon, '%'),
+                ('EC', sample.ec, 'dS/m'),
+                ('Iron (Fe)', sample.iron, 'ppm'),
+                ('Zinc (Zn)', sample.zinc, 'ppm'),
+                ('Copper (Cu)', sample.copper, 'ppm'),
+                ('Manganese', sample.manganese, 'ppm'),
+                ('Boron (B)', sample.boron, 'ppm'),
+                ('Sulphur (S)', sample.sulphur, 'ppm')
+            ] %}
+            {% for pname, pval, punit in s_params %}
+            {% if pval is not none or (sample.sample_source or sample.sample_type) == 'govt' or 'Full' in (sample.test_package or '') or not sample.test_package %}
+            <div class="col-md-2"><div class="param-box"><div class="param-name">{{ pname }}</div><div class="param-val">{{ pval if pval is not none else '—' }}</div>{% if punit %}<div class="param-unit">{{ punit }}</div>{% endif %}</div></div>
+            {% endif %}
+            {% endfor %}
         </div>
 
         <div class="recommendation mt-3">

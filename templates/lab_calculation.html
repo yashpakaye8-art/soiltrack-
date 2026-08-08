@@ -857,12 +857,12 @@ function buildSummary() {
             <span class="badge" style="background:${r.bg}; color:${r.color}; border:1px solid ${r.border}; font-weight:700; font-size:11px; padding:3px 9px; border-radius:12px; display:inline-flex; align-items:center; gap:6px;">
                 <span style="width:18px; height:18px; display:inline-flex; align-items:center;">${r.svg}</span>
                 <span>${r.label}</span>
-            </span>` : `<span style="color:#94A3B8; font-size:11px">—</span>`;
+            </span>` : (valStr ? `<span style="color:#94A3B8; font-size:11px">—</span>` : `<span style="color:#9A9485; font-size:11px; font-style:italic;">Not Tested in Package</span>`);
 
         return `
         <tr>
             <td class="rt-label">${i.label}</td>
-            <td class="rt-value">${valStr || '—'}</td>
+            <td class="rt-value">${valStr || '<span style="color:#9A9485; font-weight:normal; font-size:12px;">—</span>'}</td>
             <td class="rt-unit">${i.unit}</td>
             <td class="rt-rating" style="text-align:right; padding-left:12px;">${ratingHtml}</td>
         </tr>`;

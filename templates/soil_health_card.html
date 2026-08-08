@@ -534,6 +534,7 @@
                 ] %}
 
                 {% for p_key, p_name, p_unit, p_val in p_map %}
+                {% if p_val is not none or (sample.sample_source or sample.sample_type) == 'govt' or 'Full' in (sample.test_package or '') or not sample.test_package %}
                 {% set r = param_ratings.get(p_key) %}
                 <div class="param-card">
                     <div class="param-card-left">
@@ -555,6 +556,7 @@
                     </div>
                     {% endif %}
                 </div>
+                {% endif %}
                 {% endfor %}
             </div>
 
