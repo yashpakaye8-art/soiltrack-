@@ -695,9 +695,11 @@ async function lookupSample() {
             }
             if (d.test_package && d.included_params) {
                 pkgNotice.style.display = 'block';
-                pkgNotice.innerHTML = `💳 <b>Private Rate Card Package:</b> ${d.test_package}<br><span style="font-size:12px; color:#5C5849; font-weight:500;">Required Tests: <b style="color:#4A7C59;">${d.included_params.join(', ').toUpperCase()}</b></span>`;
+                pkgNotice.innerHTML = `💳 <b>Private Rate Card Package:</b> ${d.test_package}<br><span style="font-size:12px; color:#5C5849; font-weight:500;">Subscribed Wizard Steps: <b style="color:#4A7C59;">${d.included_params.join(', ').toUpperCase()}</b></span>`;
+                filterStepsForPackage(d.included_params);
             } else {
                 pkgNotice.style.display = 'none';
+                filterStepsForPackage(null);
             }
 
             noticeEl.style.display = 'flex';
@@ -885,37 +887,87 @@ function buildSummary() {
     }[cat];
 }
 
+let activeSteps = [1, 2, 3, 4, 5, 6, 7];
+
+function filterStepsForPackage(incParams) {
+    if (!incParams || incParams.length === 0) {
+        activeSteps = [1, 2, 3, 4, 5, 6, 7];
+    } else {
+        const has = p => incParams.includes(p);
+        activeSteps = [1];
+        if (has('ph') || has('ec')) activeSteps.push(2);
+        if (has('nitrogen')) activeSteps.push(3);
+        if (has('phosphorus') || has('potassium')) activeSteps.push(4);
+        if (has('organic_carbon') || has('boron') || has('sulphur')) activeSteps.push(5);
+        if (has('zinc') || has('iron') || has('manganese') || has('copper')) activeSteps.push(6);
+        activeSteps.push(7);
+    }
+
+    // Hide/show step circles & mobile segments for non-subscribed test steps
+    document.querySelectorAll('.step-item').forEach(el => {
+        const s = parseInt(el.dataset.step);
+        el.style.display = activeSteps.includes(s) ? '' : 'none';
+    });
+    document.querySelectorAll('.mobile-stepper-seg').forEach(seg => {
+        const s = parseInt(seg.dataset.seg);
+        seg.style.display = activeSteps.includes(s) ? '' : 'none';
+    });
+
+    if (!activeSteps.includes(currentStep)) {
+        currentStep = activeSteps[0];
+    }
+    updateUI();
+}
+
 function updateUI() {
+    const activeIdx = activeSteps.indexOf(currentStep);
+    const totalActive = activeSteps.length;
+
     document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
     document.getElementById(`panel-${currentStep}`).classList.add('active');
     document.querySelectorAll('.step-item').forEach(el => {
         el.classList.remove('active','done');
         const s = parseInt(el.dataset.step);
-        if (s < currentStep) el.classList.add('done');
+        const sIdx = activeSteps.indexOf(s);
+        if (sIdx !== -1 && sIdx < activeIdx) el.classList.add('done');
         if (s === currentStep) el.classList.add('active');
     });
-    document.getElementById('step-counter').textContent = `Step ${currentStep} of ${TOTAL}`;
 
-    // Mobile compact stepper — 7 discrete segments
+    document.getElementById('step-counter').textContent = `Step ${activeIdx + 1} of ${totalActive}`;
+
+    // Mobile compact stepper
     const STEP_NAMES = ['Sample Info', 'pH + EC', 'Nitrogen', 'P + K', 'OC + B + S', 'AAS Metals', 'Review & Save'];
-    document.getElementById('mobile-stepper-count').textContent = `STEP ${currentStep} / ${TOTAL}`;
+    document.getElementById('mobile-stepper-count').textContent = `STEP ${activeIdx + 1} / ${totalActive}`;
     document.getElementById('mobile-stepper-name').textContent = STEP_NAMES[currentStep - 1];
     document.querySelectorAll('.mobile-stepper-seg').forEach(seg => {
         seg.classList.remove('done', 'active');
         const s = parseInt(seg.dataset.seg);
-        if (s < currentStep) seg.classList.add('done');
+        const sIdx = activeSteps.indexOf(s);
+        if (sIdx !== -1 && sIdx < activeIdx) seg.classList.add('done');
         else if (s === currentStep) seg.classList.add('active');
     });
 
-    document.getElementById('btn-prev').disabled = currentStep === 1;
-    const last = currentStep === TOTAL;
-    document.getElementById('btn-next').style.display  = last ? 'none' : '';
-    document.getElementById('btn-save').style.display  = last ? '' : 'none';
-    document.getElementById('btn-print').style.display = last ? '' : 'none';
-    if (last) buildSummary();
+    document.getElementById('btn-prev').disabled = (activeIdx === 0);
+    const isLast = (activeIdx === totalActive - 1);
+    document.getElementById('btn-next').style.display  = isLast ? 'none' : '';
+    document.getElementById('btn-save').style.display  = isLast ? '' : 'none';
+    document.getElementById('btn-print').style.display = isLast ? '' : 'none';
+    if (isLast) buildSummary();
 }
-function nextStep() { if (currentStep < TOTAL) { currentStep++; updateUI(); } }
-function prevStep() { if (currentStep > 1)     { currentStep--; updateUI(); } }
+function nextStep() {
+    const idx = activeSteps.indexOf(currentStep);
+    if (idx !== -1 && idx < activeSteps.length - 1) {
+        currentStep = activeSteps[idx + 1];
+        updateUI();
+    }
+}
+function prevStep() {
+    const idx = activeSteps.indexOf(currentStep);
+    if (idx > 0) {
+        currentStep = activeSteps[idx - 1];
+        updateUI();
+    }
+}
 
 async function saveSample() {
     const sid = document.getElementById('sample_id').value.trim();
