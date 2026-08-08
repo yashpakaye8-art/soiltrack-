@@ -481,13 +481,6 @@
                 <p>Confirm all calculated values before saving to database</p>
             </div>
             <div class="p-4">
-                <div id="category-banner" class="category-banner cat-moderate">
-                    <div class="cat-icon">🌾</div>
-                    <div>
-                        <div class="cat-title" id="cat-title">Calculating…</div>
-                        <div class="cat-desc" id="cat-desc">Based on pH, Nitrogen, Phosphorus, Potassium</div>
-                    </div>
-                </div>
                 <table class="result-table" id="result-table"><tbody></tbody></table>
 
                 <div class="sec-divider"><span>✍️ Sign-off</span></div>
@@ -869,22 +862,6 @@ function buildSummary() {
             <td class="rt-rating" style="text-align:right; padding-left:12px;">${ratingHtml}</td>
         </tr>`;
     }).join('');
-
-    const cat = getCategory(
-        parseFloat(document.getElementById('ph').value),
-        parseFloat(document.getElementById('nitrogen').value),
-        parseFloat(document.getElementById('phosphorus').value),
-        parseFloat(document.getElementById('potassium').value)
-    );
-    const banner = document.getElementById('category-banner');
-    banner.className = 'category-banner cat-' + cat.toLowerCase();
-    document.getElementById('cat-title').textContent = `Soil Health: ${cat}`;
-    document.querySelector('.cat-icon').textContent = { Fertile:'🌿', Moderate:'🌾', Poor:'🍂' }[cat];
-    document.getElementById('cat-desc').textContent = {
-        Fertile:  'Excellent soil health. Maintain current practices.',
-        Moderate: 'Some nutrients need attention. Consider targeted fertilization.',
-        Poor:     'Significant nutrient deficiencies. Recommend soil amendment.'
-    }[cat];
 }
 
 let activeSteps = [1, 2, 3, 4, 5, 6, 7];

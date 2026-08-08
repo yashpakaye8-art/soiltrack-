@@ -180,16 +180,9 @@
 <!-- Main Content -->
 <div class="main-content" style="max-width:900px">
 
-    <!-- Sample ID + Category -->
+    <!-- Sample ID -->
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
         <span class="sample-id">{{ sample.sample_id }}</span>
-        {% if sample.category == 'Fertile' %}
-            <span class="badge-fertile">● Fertile</span>
-        {% elif sample.category == 'Moderate' %}
-            <span class="badge-moderate">● Moderate</span>
-        {% else %}
-            <span class="badge-poor">● Poor</span>
-        {% endif %}
     </div>
 
     <!-- Info Cards -->
@@ -253,13 +246,7 @@
         <div class="recommendation mt-3">
             <div class="rec-title">💡 Recommendation</div>
             <div class="rec-text">
-                {% if sample.category == 'Fertile' %}
-                    Soil is in excellent condition. NPK levels are good. Continue current fertilisation practices. Re-test after 6 months.
-                {% elif sample.category == 'Moderate' %}
-                    Soil has moderate nutrient levels. Consider targeted fertilisation. Monitor pH and add organic matter to improve fertility.
-                {% else %}
-                    Soil requires improvement. Apply balanced NPK fertiliser, add organic matter and adjust pH if needed before cultivation.
-                {% endif %}
+                Apply balanced crop fertilisation doses according to tested soil laboratory parameters. View <a href="/soil-health-card/{{ sample.id }}" style="color:#2D5A3D; font-weight:700;">Soil Health Card</a> for itemized fertilizer recommendations.
             </div>
         </div>
     </div>
