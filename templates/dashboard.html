@@ -252,7 +252,7 @@
                         <td>{{ sample.collection_date or '—' }}</td>
                         <td style="text-align:right; white-space:nowrap;">
                             <a href="/sample/{{ sample.id }}" style="color:#4A7C59;font-weight:600;font-size:13px;text-decoration:none;margin-right:12px;">View →</a>
-                            <a href="/lab-calculation" onclick="sessionStorage.setItem('prefill_id','{{ sample.sample_id }}')" style="color:#3A6B4A;font-weight:600;font-size:13px;text-decoration:none;">🧪 Edit Lab</a>
+                            <a href="/lab-calculation?sample_id={{ sample.sample_id }}" style="color:#3A6B4A;font-weight:600;font-size:13px;text-decoration:none;">🧪 Edit Lab</a>
                         </td>
                     </tr>
                     {% else %}
@@ -296,7 +296,7 @@
                 </div>
                 <div class="mobile-card-actions">
                     <a href="/sample/{{ sample.id }}" class="btn-mobile-view">View Details →</a>
-                    <a href="/lab-calculation" onclick="sessionStorage.setItem('prefill_id','{{ sample.sample_id }}')" class="btn-mobile-lab">🧪 Edit Lab</a>
+                    <a href="/lab-calculation?sample_id={{ sample.sample_id }}" class="btn-mobile-lab">🧪 Edit Lab</a>
                 </div>
             </div>
             {% else %}

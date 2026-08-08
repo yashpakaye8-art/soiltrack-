@@ -172,7 +172,7 @@
         <a href="/bill/{{ sample.id }}" class="btn-bill" style="background:#2563EB; color:white; border-radius:6px; padding:7px 14px; text-decoration:none; font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:6px;">🧾 Generate Bill / Receipt</a>
         {% endif %}
         <a href="/soil-health-card/{{ sample.id }}" class="btn-health-card">🌱 Soil Health Card</a>
-        <a href="/lab-calculation" onclick="sessionStorage.setItem('prefill_id','{{ sample.sample_id }}')" class="btn-lab">🧪 Edit Lab</a>
+        <a href="/lab-calculation?sample_id={{ sample.sample_id }}" class="btn-lab">🧪 Edit Lab</a>
         <a href="/edit/{{ sample.id }}" class="btn-edit">✏️ Edit</a>
     </div>
 </div>

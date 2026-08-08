@@ -1016,6 +1016,16 @@ function closeSidebar() {
 window.addEventListener('resize', function () {
     if (window.innerWidth > 768) closeSidebar();
 });
+
+window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const qSid = urlParams.get('sample_id') || sessionStorage.getItem('prefill_id');
+    if (qSid) {
+        document.getElementById('sample_id').value = qSid;
+        sessionStorage.removeItem('prefill_id');
+        lookupSample();
+    }
+});
 </script>
 </body>
 </html>
