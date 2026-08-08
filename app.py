@@ -837,7 +837,12 @@ def bulk_add_post():
             wb = openpyxl.load_workbook(temp_filepath, data_only=True)
             sheet_names = wb.sheetnames
             if not selected_sheet or selected_sheet not in sheet_names:
+                # Intelligently auto-select data sheet like 'cumulative' or 'data' or first sheet
                 selected_sheet = sheet_names[0]
+                for s in sheet_names:
+                    if 'cumul' in s.lower() or 'data' in s.lower() or 'sample' in s.lower():
+                        selected_sheet = s
+                        break
             sheet = wb[selected_sheet]
 
             header_cells = list(sheet.iter_rows(min_row=1, max_row=1, values_only=True))[0]
@@ -872,6 +877,58 @@ def bulk_add_post():
         'bulk_map.html',
         temp_filename=temp_filename,
         original_filename=filename,
+        raw_headers=raw_headers,
+        target_fields=TARGET_FIELDS,
+        auto_mappings=auto_mappings,
+        preview_rows=preview_rows,
+        total_rows=total_rows,
+        sheet_names=sheet_names,
+        selected_sheet=selected_sheet
+    )
+
+@app.route('/bulk-switch-sheet', methods=['POST'])
+@staff_or_admin_required
+def bulk_switch_sheet_post():
+    temp_filename = request.form.get('temp_filename')
+    selected_sheet = request.form.get('selected_sheet', '')
+    if not temp_filename:
+        flash('Session expired. Please upload file again.', 'error')
+        return redirect(url_for('bulk_add'))
+
+    temp_filepath = os.path.join(TEMP_IMPORT_DIR, temp_filename)
+    if not os.path.exists(temp_filepath):
+        flash('Temporary import file missing.', 'error')
+        return redirect(url_for('bulk_add'))
+
+    import openpyxl
+    wb = openpyxl.load_workbook(temp_filepath, data_only=True)
+    sheet_names = wb.sheetnames
+    if not selected_sheet or selected_sheet not in sheet_names:
+        selected_sheet = sheet_names[0]
+    sheet = wb[selected_sheet]
+
+    header_cells = list(sheet.iter_rows(min_row=1, max_row=1, values_only=True))[0]
+    raw_headers = [str(c).strip() for c in header_cells if c is not None and str(c).strip()]
+
+    preview_rows = []
+    total_rows = 0
+    for i, row in enumerate(sheet.iter_rows(min_row=2, values_only=True)):
+        if not any(row):
+            continue
+        total_rows += 1
+        if i < 3:
+            row_dict = {}
+            for idx, val in enumerate(row):
+                if idx < len(raw_headers):
+                    row_dict[raw_headers[idx]] = str(val or '').strip()
+            preview_rows.append(row_dict)
+
+    auto_mappings = {field_key: auto_detect_header(field_key, raw_headers) for field_key, _, _ in TARGET_FIELDS}
+
+    return render_template(
+        'bulk_map.html',
+        temp_filename=temp_filename,
+        original_filename=temp_filename.split('_', 2)[-1] if '_' in temp_filename else temp_filename,
         raw_headers=raw_headers,
         target_fields=TARGET_FIELDS,
         auto_mappings=auto_mappings,

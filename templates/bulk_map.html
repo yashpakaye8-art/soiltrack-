@@ -369,12 +369,17 @@ function autoMapColumns() {
 
 function changeExcelSheet(sheetName) {
     document.getElementById('selectedSheetInput').value = sheetName;
+    const form = document.getElementById('mapForm');
+    form.action = '/bulk-switch-sheet';
+    form.submit();
 }
 
 document.getElementById('mapForm').addEventListener('submit', function() {
     const btn = document.getElementById('btnConfirm');
-    btn.disabled = true;
-    btn.innerHTML = '⏳ Importing {{ total_rows }} Samples... Please wait';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Importing {{ total_rows }} Samples... Please wait';
+    }
 });
 </script>
 
