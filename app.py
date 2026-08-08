@@ -1755,6 +1755,7 @@ def get_detailed_recommendations(sample, ratings):
         return {
             'has_crop': False,
             'crop': 'Not Specified',
+            'grd_summary': {},
             'comb1': [],
             'comb2': [],
             'organic': []
@@ -1770,19 +1771,71 @@ def get_detailed_recommendations(sample, ratings):
                 dose = CROP_RECOMMENDED_DOSES[k]
                 break
     if not dose:
-        dose = CROP_RECOMMENDED_DOSES['Cashew 4th year Onwards']
+        dose = CROP_RECOMMENDED_DOSES['Paddy']
+
+    n_val = sample.nitrogen
+    p_val = sample.phosphorus
+    k_val = sample.potassium
 
     n_rating = ratings.get('nitrogen')
     p_rating = ratings.get('phosphorus')
     k_rating = ratings.get('potassium')
     
-    # Calculate fertilizer amounts based on Soil Rating
-    # If LOW / LOWER: 100% full dose
-    # If MODERATE: 75% dose
-    # If HIGH / HIGHER: 50% or 0 dose
-    mult_n = 1.0 if not n_rating or n_rating['level'] in ['lower', 'low'] else (0.75 if n_rating['level'] == 'moderate' else 0.5)
-    mult_p = 1.0 if not p_rating or p_rating['level'] in ['lower', 'low'] else (0.75 if p_rating['level'] == 'moderate' else 0.5)
-    mult_k = 1.0 if not k_rating or k_rating['level'] in ['lower', 'low'] else (0.75 if k_rating['level'] == 'moderate' else 0.0)
+    # ── GRD Direct Comparison Logic ──
+    # If tested lab value > target GRD (or rating is HIGH/HIGHER): Dose REDUCED (0.75x or 0.5x)
+    # If tested lab value == target GRD (or rating is MODERATE): Dose STANDARD (1.0x OK)
+    # If tested lab value < target GRD (or rating is LOW/LOWER): Dose INCREASED (1.25x to replenish soil)
+    
+    # Nitrogen multiplier
+    if n_val is not None and n_val > dose['n']:
+        mult_n = 0.75  # Reduced dose for excess Nitrogen
+        n_status = f"{n_val} kg/ha (Higher than GRD {dose['n']}) → Reduced Dose (-25%)"
+    elif n_rating and n_rating['level'] in ['high', 'higher']:
+        mult_n = 0.75
+        n_status = f"HIGH → Reduced Dose (-25%)"
+    elif n_val is not None and n_val < (dose['n'] * 0.85):
+        mult_n = 1.25  # Increased dose for deficient Nitrogen
+        n_status = f"{n_val} kg/ha (Lower than GRD {dose['n']}) → Increased Dose (+25%)"
+    elif n_rating and n_rating['level'] in ['low', 'lower']:
+        mult_n = 1.25
+        n_status = f"LOW → Increased Dose (+25%)"
+    else:
+        mult_n = 1.0   # Standard GRD dose OK
+        n_status = f"{n_val if n_val is not None else 'OK'} (Sufficient / Matches GRD {dose['n']}) → Standard Dose (100%)"
+
+    # Phosphorus multiplier
+    if p_val is not None and p_val > dose['p']:
+        mult_p = 0.75
+        p_status = f"{p_val} kg/ha (Higher than GRD {dose['p']}) → Reduced Dose (-25%)"
+    elif p_rating and p_rating['level'] in ['high', 'higher']:
+        mult_p = 0.75
+        p_status = f"HIGH → Reduced Dose (-25%)"
+    elif p_val is not None and p_val < (dose['p'] * 0.85):
+        mult_p = 1.25
+        p_status = f"{p_val} kg/ha (Lower than GRD {dose['p']}) → Increased Dose (+25%)"
+    elif p_rating and p_rating['level'] in ['low', 'lower']:
+        mult_p = 1.25
+        p_status = f"LOW → Increased Dose (+25%)"
+    else:
+        mult_p = 1.0
+        p_status = f"{p_val if p_val is not None else 'OK'} (Sufficient / Matches GRD {dose['p']}) → Standard Dose (100%)"
+
+    # Potassium multiplier
+    if k_val is not None and k_val > dose['k']:
+        mult_k = 0.75
+        k_status = f"{k_val} kg/ha (Higher than GRD {dose['k']}) → Reduced Dose (-25%)"
+    elif k_rating and k_rating['level'] in ['high', 'higher']:
+        mult_k = 0.75
+        k_status = f"HIGH → Reduced Dose (-25%)"
+    elif k_val is not None and k_val < (dose['k'] * 0.85):
+        mult_k = 1.25
+        k_status = f"{k_val} kg/ha (Lower than GRD {dose['k']}) → Increased Dose (+25%)"
+    elif k_rating and k_rating['level'] in ['low', 'lower']:
+        mult_k = 1.25
+        k_status = f"LOW → Increased Dose (+25%)"
+    else:
+        mult_k = 1.0
+        k_status = f"{k_val if k_val is not None else 'OK'} (Sufficient / Matches GRD {dose['k']}) → Standard Dose (100%)"
 
     dap_amt = int(round(dose['p'] * mult_p * 1000)) if 'Grams' in dose['unit'] else int(round(dose['p'] * mult_p))
     mop_amt = int(round(dose['k'] * mult_k * 1000)) if 'Grams' in dose['unit'] else int(round(dose['k'] * mult_k))
@@ -1810,6 +1863,10 @@ def get_detailed_recommendations(sample, ratings):
     return {
         'has_crop': True,
         'crop': crop_name,
+        'grd_target': dose,
+        'status_n': n_status,
+        'status_p': p_status,
+        'status_k': k_status,
         'comb1': comb1,
         'comb2': comb2,
         'organic': organic
