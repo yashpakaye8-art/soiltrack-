@@ -1226,11 +1226,31 @@ def update_sample(id):
     return redirect(url_for('sample_detail', id=sample.id))
 
 @app.route('/delete/<int:id>')
-@admin_required
+@staff_or_admin_required
 def delete_sample(id):
     sample = db.session.get(Sample, id)
-    db.session.delete(sample)
-    db.session.commit()
+    if sample:
+        db.session.delete(sample)
+        db.session.commit()
+    return redirect(url_for('all_samples'))
+
+@app.route('/bulk-delete', methods=['POST'])
+@staff_or_admin_required
+def bulk_delete_samples():
+    sample_ids = request.form.getlist('sample_ids')
+    if sample_ids:
+        if 'all' in sample_ids:
+            num = Sample.query.delete()
+            db.session.commit()
+            flash(f'✅ All {num} samples have been deleted from the database.', 'success')
+        else:
+            ids = [int(i) for i in sample_ids if i.isdigit()]
+            if ids:
+                num = Sample.query.filter(Sample.id.in_(ids)).delete(synchronize_session=False)
+                db.session.commit()
+                flash(f'✅ Successfully deleted {num} selected samples.', 'success')
+    else:
+        flash('No samples selected for deletion.', 'error')
     return redirect(url_for('all_samples'))
 
 # ── Export ──
