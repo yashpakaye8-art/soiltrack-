@@ -1030,9 +1030,20 @@ def bulk_process_post():
     last_sample_id = None
     today_str = datetime.now().strftime('%Y-%m-%d')
 
+    # Extract village fallback from filename if available (e.g., Jambhulwadi)
+    filename_village = 'Jambhulwadi'
+    clean_filename = temp_filename.split('_', 2)[-1] if '_' in temp_filename else temp_filename
+    for word in clean_filename.replace('.xlsx', '').replace('.xls', '').replace('.csv', '').split('_'):
+        if word.lower() not in ['soil', 'data', 'analysis', 'final', 'uploading', 'temp', 'import', 'sheet']:
+            filename_village = word.strip().capitalize()
+            break
+
     for r in rows_data:
-        mapped_sample_id = (r.get(col_sample_id, '') if col_sample_id else '').strip()
-        village = r.get(col_village) if col_village else ''
+        raw_mapped_id = (r.get(col_sample_id, '') if col_sample_id else '').strip()
+        # Only use mapped_sample_id if it looks like an actual sample code (e.g. JAM01, RAT01), not plain row numbers like 1, 2, 3
+        mapped_sample_id = raw_mapped_id if (raw_mapped_id and not raw_mapped_id.isdigit() and len(raw_mapped_id) >= 3) else ''
+
+        village = (r.get(col_village, '') if col_village else '').strip()
         
         # Check if existing sample exists by Sample ID OR by (Village + Farmer Name + Survey No)
         existing_sample = None
@@ -1048,8 +1059,8 @@ def bulk_process_post():
             existing_sample = Sample.query.filter_by(village=village, farmer_name=farmer_name, survey_number=survey_number).first()
 
         if not village:
-            village = existing_sample.village if existing_sample else 'Soil Lab'
-            
+            village = existing_sample.village if (existing_sample and existing_sample.village) else filename_village
+
         raw_src = (r.get(col_source, '') if col_source else default_source).lower()
         sample_source = 'govt' if 'gov' in raw_src else ('private' if 'pvt' in raw_src or 'priv' in raw_src else default_source)
         
@@ -1113,7 +1124,7 @@ def bulk_process_post():
             updated_count += 1
             continue
 
-        # IF NEW SAMPLE: CREATE NEW RECORD WITH AUTO-GENERATED ID
+        # IF NEW SAMPLE: CREATE NEW RECORD WITH AUTO-GENERATED ID (JAM01, JAM02...)
         code = village[:3].upper() if len(village) >= 3 else village.upper().ljust(3, 'X')
         if code not in village_counts:
             cnt = Sample.query.filter(Sample.sample_id.like(f"{code}%")).count()
@@ -1122,7 +1133,7 @@ def bulk_process_post():
 
         seq_num = village_counts[code]
         seq_str = str(seq_num).zfill(2 if seq_num < 100 else len(str(seq_num)))
-        sample_id = f"{code}-{seq_str}"
+        sample_id = f"{code}{seq_str}"
 
         if not first_sample_id:
             first_sample_id = sample_id
