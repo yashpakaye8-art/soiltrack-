@@ -758,18 +758,18 @@ TARGET_FIELDS = [
 
 def auto_detect_header(target_key, raw_headers):
     keywords = {
-        'sample_id': ['sample id', 'sample_id', 'id', 'lab no', 'sample no', 'code'],
-        'village': ['village', 'gaon', 'gram', 'city', 'location', 'place', 'address'],
-        'farmer_name': ['farmer', 'name', 'kisan', 'owner', 'holder'],
-        'phone_number': ['phone', 'mobile', 'contact', 'cell', 'tel', 'number'],
-        'address': ['address', 'pata', 'street', 'location'],
-        'survey_number': ['survey', 'gut', 'gat', 'khasra', 'plot', 'no'],
+        'sample_id': ['sample id', 'sample_id', 'test id', 'lab no', 'sample no', 'code'],
+        'village': ['village', 'gaon', 'gram', 'city', 'place', 'location'],
+        'farmer_name': ['farmer name', 'farmer', 'kisan', 'owner', 'holder'],
+        'phone_number': ['phone number', 'phone', 'mobile', 'contact', 'cell', 'tel'],
+        'address': ['farmer address', 'address', 'pata', 'street'],
+        'survey_number': ['survey number', 'survey', 'gut', 'gat', 'khasra', 'plot'],
         'sample_source': ['source', 'category', 'type', 'govt'],
         'scheme': ['scheme', 'yojana', 'govt', 'government'],
         'crop': ['crop', 'piq', 'plant', 'sample_type'],
         'testing_fee': ['fee', 'cost', 'amount', 'price', 'charge'],
         'collection_date': ['date', 'tikh', 'time'],
-        'ph': ['ph'],
+        'ph': ['ph', 'ph value', 'soil ph', 'ph_val'],
         'ec': ['ec', 'conductivity'],
         'organic_carbon': ['oc', 'organic carbon', 'carbon'],
         'nitrogen': ['nitrogen', 'n_val', 'n '],
@@ -782,9 +782,20 @@ def auto_detect_header(target_key, raw_headers):
         'manganese': ['manganese', 'mn'],
         'copper': ['copper', 'cu']
     }
-    target_kws = keywords.get(target_key, [target_key])
+
     for h in raw_headers:
-        h_clean = h.lower().replace('_', ' ').replace('-', ' ')
+        h_clean = h.lower().replace('_', ' ').replace('-', ' ').strip()
+
+        # SPECIAL SAFETY FILTER FOR pH: Do not match 'phone number' as 'pH'
+        if target_key == 'ph':
+            if 'phone' in h_clean:
+                continue
+            words = h_clean.split()
+            if 'ph' in words or h_clean in ['ph', 'ph value', 'soil ph', 'ph_val'] or h_clean.startswith('ph ') or h_clean.endswith(' ph'):
+                return h
+            continue
+
+        target_kws = keywords.get(target_key, [target_key])
         for kw in target_kws:
             if kw in h_clean:
                 return h
