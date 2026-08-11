@@ -476,11 +476,11 @@
             </div>
             <div class="info-row">
                 <div class="info-label">PLOT ADDRESS</div>
-                <div class="info-value">{{ sample.village or 'Jambhulwadi' }}, Sangameshwar, Ratnagiri</div>
+                <div class="info-value">{{ sample.village or '—' }}</div>
             </div>
             <div class="info-row">
                 <div class="info-label">SAMPLING DATE</div>
-                <div class="info-value">{{ sample.collection_date or '2025-2026' }}</div>
+                <div class="info-value">{{ sample.collection_date or '—' }}</div>
             </div>
             <div class="info-row">
                 <div class="info-label">GEO POSITION (GPS)</div>
@@ -490,15 +490,15 @@
             <div class="panel-heading" style="margin-top: 14px;">CARD ISSUED TO</div>
             <div class="info-row">
                 <div class="info-label">FARMER NAME</div>
-                <div class="info-value">{{ sample.farmer_name or 'Sharada Krushna Kardode' }}</div>
+                <div class="info-value">{{ sample.farmer_name or '—' }}</div>
             </div>
             <div class="info-row">
                 <div class="info-label">PHONE NUMBER</div>
-                <div class="info-value">{{ sample.phone_number or '+91 9******7579' }}</div>
+                <div class="info-value">{{ sample.phone_number or '—' }}</div>
             </div>
             <div class="info-row">
                 <div class="info-label">ADDRESS</div>
-                <div class="info-value">{{ sample.address or sample.village or 'Jambhulwadi' }}, Sangameshwar, Ratnagiri</div>
+                <div class="info-value">{{ sample.address or sample.village or '—' }}</div>
             </div>
             <div class="info-row">
                 <div class="info-label">PLOT SIZE</div>
