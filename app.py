@@ -281,11 +281,52 @@ def get_factors_dict():
     factors = DilutionFactor.query.all()
     return {f.parameter: f.factor for f in factors}
 
-def generate_sample_id(village):
-    code = village[:3].upper()
-    count = Sample.query.filter(Sample.sample_id.like(f"{code}%")).count()
-    new_number = str(count + 1).zfill(2)
-    return f"{code}{new_number}"
+TALUKA_CODES = {
+    'ratnagiri': 'RT',
+    'sangameshwar': 'SG',
+    'sangameshar': 'SG',
+    'lanja': 'LJ',
+    'chiplun': 'CH',
+    'rajapur': 'RJ',
+    'guhagar': 'GH',
+    'dapoli': 'DP',
+    'khed': 'KH',
+    'mandangad': 'MN'
+}
+
+def detect_taluka_code(taluka=None, address=None, village=None):
+    text = f"{taluka or ''} {address or ''} {village or ''}".lower()
+    for name, code in TALUKA_CODES.items():
+        if name in text:
+            return code
+    return ''
+
+def generate_sample_id(village, taluka=None, address=None):
+    v_code = village[:3].upper() if len(village) >= 3 else village.upper().ljust(3, 'X')
+    t_code = detect_taluka_code(taluka, address, village)
+
+    standard_prefix = v_code
+    existing = Sample.query.filter(Sample.sample_id.like(f"{standard_prefix}%")).all()
+    
+    if existing:
+        has_location_conflict = False
+        if t_code:
+            for s in existing:
+                s_t_code = detect_taluka_code(getattr(s, 'taluka', ''), s.address, s.village)
+                if s_t_code and s_t_code != t_code:
+                    has_location_conflict = True
+                    break
+        
+        # If ID clash exists from a different Taluka, apply Taluka prefix (e.g. SG-KOL01)
+        if has_location_conflict and t_code:
+            prefix = f"{t_code}-{v_code}"
+            cnt = Sample.query.filter(Sample.sample_id.like(f"{prefix}%")).count()
+            seq_str = str(cnt + 1).zfill(2)
+            return f"{prefix}{seq_str}"
+
+    cnt = len(existing)
+    seq_str = str(cnt + 1).zfill(2)
+    return f"{v_code}{seq_str}"
 
 def get_fertility_score(ph, nitrogen, phosphorus, potassium):
     """Returns (category, ratio) — same Fertile/Moderate/Poor logic as before,
@@ -687,7 +728,7 @@ def save_sample():
         testing_fee = 0.0
 
     new_sample = Sample(
-        sample_id       = generate_sample_id(village),
+        sample_id       = generate_sample_id(village, address=request.form.get('address')),
         village         = village,
         sample_type     = request.form.get('sample_type'),
         farmer_name     = request.form.get('farmer_name'),
