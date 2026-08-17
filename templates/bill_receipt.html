@@ -352,10 +352,9 @@
     </table>
 
     <!-- Total Summary Box -->
-    <div class="total-box-wrap">
-        <div class="paid-stamp">✓ PAYMENT RECEIVED</div>
+    <div class="total-box-wrap" style="justify-content: flex-end;">
         <div>
-            <span style="font-size:11px; font-weight:700; color:#475569; margin-right:8px;">TOTAL PAID AMOUNT:</span>
+            <span style="font-size:11px; font-weight:700; color:#475569; margin-right:8px;">TOTAL FEE AMOUNT:</span>
             <span class="grand-total">₹ {{ "%.2f"|format(sample.testing_fee or 550.0) }}</span>
         </div>
     </div>
@@ -363,8 +362,7 @@
     <!-- Footer & Signatures -->
     <div class="bill-footer">
         <div class="terms-text">
-            * This is an official computer-generated receipt issued by Department of Chemistry — Shraddha Parshuram Analytical Laboratory, R. P. Gogate & R. V. Jogalekar College (Autonomous), Ratnagiri.<br>
-            * Payment received in full towards soil sample chemical testing services.
+            * This is an official computer-generated receipt issued by Department of Chemistry — Shraddha Parshuram Analytical Laboratory, R. P. Gogate & R. V. Jogalekar College (Autonomous), Ratnagiri.
         </div>
 
         <div class="sign-box">
