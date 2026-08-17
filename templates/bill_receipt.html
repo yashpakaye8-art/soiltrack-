@@ -29,18 +29,29 @@
             margin-bottom: 14px;
         }
         .college-name {
-            font-size: 13.5px;
-            font-weight: 900;
+            font-size: 12.5px;
+            font-weight: 800;
             color: #166534;
             text-transform: uppercase;
             letter-spacing: 0.3px;
-            line-height: 1.35;
+            line-height: 1.4;
+            margin-bottom: 4px;
         }
         .dept-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 800;
+            color: #475569;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+        .lab-title {
+            font-size: 14px;
+            font-weight: 900;
             color: #0F172A;
-            margin-top: 3px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 3px;
         }
         .college-address {
             font-size: 9.5px;
@@ -273,15 +284,16 @@
 
     <!-- College Header -->
     <div class="college-header">
-        <div class="college-name">Ratnagiri Education Society’s R. P. Gogate College of Arts & Science and R. V. Jogalekar College of Commerce</div>
-        <div class="dept-title">SOIL TESTING & AGRICULTURAL RESEARCH LABORATORY</div>
+        <div class="college-name">Ratnagiri Education Society’s R. P. Gogate College of Arts & Science and R. V. Jogalekar College of Commerce (Autonomous), Ratnagiri</div>
+        <div class="dept-title">DEPARTMENT OF CHEMISTRY</div>
+        <div class="lab-title">Shraddha Parshuram Analytical Laboratory</div>
         <div class="college-address">Ratnagiri - 415612, Maharashtra, India | Phone: (02352) 222383</div>
     </div>
 
     <!-- Bill Title Banner -->
     <div class="bill-banner">
-        <div class="bill-title">🧾 OFFICIAL PRIVATE SOIL TESTING PAYMENT RECEIPT</div>
-        <div class="receipt-no">RECEIPT NO: <strong>INV-{{ sample.sample_id }}</strong></div>
+        <div class="bill-title">🧾 OFFICIAL SOIL TESTING PAYMENT RECEIPT</div>
+        <div class="receipt-no">RECEIPT NO: <strong>{{ receipt_no if receipt_no else 'SPAL/2026-27/01' }}</strong></div>
     </div>
 
     <!-- Info Grid -->
@@ -351,8 +363,8 @@
     <!-- Footer & Signatures -->
     <div class="bill-footer">
         <div class="terms-text">
-            * This is an official computer-generated receipt issued by R. P. Gogate & R. V. Jogalekar College Soil Testing Lab.<br>
-            * Payment received in full towards private soil sample analysis services.
+            * This is an official computer-generated receipt issued by Department of Chemistry — Shraddha Parshuram Analytical Laboratory, R. P. Gogate & R. V. Jogalekar College (Autonomous), Ratnagiri.<br>
+            * Payment received in full towards soil sample chemical testing services.
         </div>
 
         <div class="sign-box">
@@ -367,7 +379,7 @@
 <script>
 function downloadPDF() {
     const element = document.getElementById('bill-receipt');
-    const filename = 'Receipt_INV_{{ sample.sample_id }}.pdf';
+    const filename = 'Receipt_{{ (receipt_no or sample.sample_id)|replace("/", "_") }}.pdf';
 
     const opt = {
         margin:       [4, 4, 4, 4],

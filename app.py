@@ -2169,7 +2169,20 @@ def generate_bill(id):
     if not sample:
         flash("No sample found.", "error")
         return redirect(url_for('all_samples'))
-    return render_template('bill_receipt.html', sample=sample)
+
+    # Calculate Indian Financial Year (1 April - 31 March)
+    today = datetime.now()
+    if today.month >= 4:
+        fy_str = f"{today.year}-{(today.year + 1) % 100:02d}"
+    else:
+        fy_str = f"{today.year - 1}-{(today.year) % 100:02d}"
+
+    seq_match = re.search(r'\d+$', sample.sample_id or '')
+    seq_num = seq_match.group(0).zfill(2) if seq_match else f"{sample.id:02d}"
+
+    receipt_no = f"SPAL/{fy_str}/{seq_num}"
+
+    return render_template('bill_receipt.html', sample=sample, receipt_no=receipt_no, financial_year=fy_str)
 
 try:
     with app.app_context():
