@@ -2173,6 +2173,13 @@ def generate_bill(id):
 
 try:
     with app.app_context():
+        import sqlalchemy
+        inspector = sqlalchemy.inspect(db.engine)
+        if 'sample' in inspector.get_table_names():
+            cols = [c['name'] for c in inspector.get_columns('sample')]
+            if 'taluka' not in cols:
+                with db.engine.begin() as conn:
+                    conn.execute(sqlalchemy.text("ALTER TABLE sample ADD COLUMN taluka VARCHAR(100)"))
         db.create_all()
         seed_dilution_factors()
         seed_admin_account()
