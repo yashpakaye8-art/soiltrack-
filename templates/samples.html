@@ -271,15 +271,39 @@
         <button type="button" onclick="deleteAllSamples()" class="btn btn-sm btn-outline-danger" style="border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600">🗑 Delete All Samples</button>
         <a href="/export" class="btn btn-sm" style="background:white;color:#4A7C59;border:1px solid #4A7C59;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600;text-decoration:none;">⬇ Export All</a>
         <a href="/add" class="btn btn-sm" style="background:#4A7C59;color:white;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600;text-decoration:none;">+ Add Sample</a>
-        <a href="/logout" class="btn btn-sm btn-outline-danger fw-bold" style="border-radius:8px;padding:7px 14px;font-size:13px;text-decoration:none;">🚪 Logout</a>
     </div>
 </div>
 
 <div class="main-content">
     <div class="card">
-        <div class="search-bar">
-            <input type="text" id="searchInput" placeholder="🔍 Search by ID, village, farmer..." onkeyup="filterTable()">
-            <select id="typeFilter" onchange="filterTable()">
+        <div class="search-bar" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px">
+            <input type="text" id="searchInput" placeholder="🔍 Search ID, Village, Farmer Name..." onkeyup="filterTable()" style="flex:1;min-width:200px">
+            
+            <select id="villageFilter" onchange="filterTable()" style="min-width:140px;padding:8px 12px;border-radius:8px;border:1px solid #CBD5E1">
+                <option value="">All Villages</option>
+                {% set villages = [] %}
+                {% for s in samples %}
+                    {% if s.village and s.village not in villages %}
+                        {% set _ = villages.append(s.village) %}
+                        <option value="{{ s.village }}">{{ s.village }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+
+            <select id="talukaFilter" onchange="filterTable()" style="min-width:140px;padding:8px 12px;border-radius:8px;border:1px solid #CBD5E1">
+                <option value="">All Talukas</option>
+                <option value="RT">Ratnagiri (RT)</option>
+                <option value="SG">Sangameshwar (SG)</option>
+                <option value="LJ">Lanja (LJ)</option>
+                <option value="CH">Chiplun (CH)</option>
+                <option value="RJ">Rajapur (RJ)</option>
+                <option value="GH">Guhagar (GH)</option>
+                <option value="DP">Dapoli (DP)</option>
+                <option value="KH">Khed (KH)</option>
+                <option value="MN">Mandangad (MN)</option>
+            </select>
+
+            <select id="typeFilter" onchange="filterTable()" style="min-width:130px;padding:8px 12px;border-radius:8px;border:1px solid #CBD5E1">
                 <option value="">All Source Types</option>
                 <option value="govt">Government</option>
                 <option value="private">Private</option>
@@ -354,11 +378,18 @@
 function filterTable() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     const typeFilter = document.getElementById('typeFilter').value.toLowerCase();
+    const villageFilter = document.getElementById('villageFilter') ? document.getElementById('villageFilter').value.toLowerCase() : '';
+    const talukaFilter = document.getElementById('talukaFilter') ? document.getElementById('talukaFilter').value.toUpperCase() : '';
+    
     const rows = document.querySelectorAll('#samplesTable tbody tr');
     let visibleCount = 0;
+    
     rows.forEach(row => {
         const text = row.innerText.toLowerCase();
         const rawType = (row.getAttribute('data-type') || '').toLowerCase();
+        const sampleIdElem = row.querySelector('.sample-id');
+        const sampleId = sampleIdElem ? sampleIdElem.innerText.toUpperCase() : '';
+        const villageText = row.children[2] ? row.children[2].innerText.toLowerCase() : '';
         
         let normalizedType = 'private';
         if (rawType.includes('gov')) {
@@ -367,9 +398,15 @@ function filterTable() {
         
         const matchSearch = search === '' || text.includes(search);
         const matchType = typeFilter === '' || normalizedType === typeFilter || rawType.includes(typeFilter);
+        const matchVillage = villageFilter === '' || villageText.includes(villageFilter);
+        const matchTaluka = talukaFilter === '' || sampleId.startsWith(talukaFilter + '-') || text.includes(talukaFilter.toLowerCase());
         
-        if (matchSearch && matchType) { row.style.display = ''; visibleCount++; }
-        else { row.style.display = 'none'; }
+        if (matchSearch && matchType && matchVillage && matchTaluka) { 
+            row.style.display = ''; 
+            visibleCount++; 
+        } else { 
+            row.style.display = 'none'; 
+        }
     });
     document.getElementById('no-results').style.display = visibleCount === 0 ? 'block' : 'none';
 }

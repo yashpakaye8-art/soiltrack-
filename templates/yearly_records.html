@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Yearly Records & Annual Soil Report - SoilTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        html, body { overflow-x: hidden; }
+        body { background-color: #F4F1EB; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #1A1814; }
+        
+        /* ── Sidebar ── */
+        .sidebar { height: 100vh; background-color: #4A7C59; padding-top: 20px; position: fixed; width: 220px; top: 0; left: 0; z-index: 1000; transition: transform 0.25s ease; display: flex; flex-direction: column; overflow-y: auto; }
+        .sidebar .logo { color: #fff; font-size: 20px; font-weight: 700; padding: 10px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 10px; }
+        .sidebar .logo span { font-size: 12px; display: block; font-weight: 400; opacity: 0.75; margin-top: 2px; }
+        .sidebar a { color: rgba(255,255,255,0.85); text-decoration: none; display: block; padding: 10px 20px; font-size: 14px; transition: all 0.15s; }
+        .sidebar a:hover { background-color: #3A6B4A; color: #fff; }
+        .sidebar a.active { background-color: #3A6B4A; color: #fff; font-weight: 600; }
+        .sidebar .nav-section { color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 15px 20px 5px; }
+        .sidebar-bottom { margin-top: auto; padding: 15px 0 25px; border-top: 1px solid rgba(255,255,255,0.2); }
+
+        /* ── Topbar & Content ── */
+        .main-content { margin-left: 220px; padding: 30px; }
+        .topbar { background: white; padding: 15px 30px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; display: flex; align-items: center; gap: 10px; }
+        
+        /* ── Stat Cards ── */
+        .stat-card {
+            border-radius: 14px;
+            padding: 20px;
+            color: white;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+        .stat-label { font-size: 11px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.7px; font-weight: 700; margin-bottom: 8px; }
+        .stat-value { font-size: 28px; font-weight: 700; line-height: 1; }
+        .stat-sub { font-size: 11px; margin-top: 8px; opacity: 0.85; font-weight: 500; }
+
+        .card { border: 1px solid #DDD9CF; border-radius: 12px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        
+        table { width: 100%; border-collapse: collapse; }
+        thead th { font-size: 11px; font-weight: 700; color: #9A9485; text-transform: uppercase; letter-spacing: 0.6px; padding: 12px 16px; border-bottom: 1px solid #DDD9CF; background: #FAFAF7; }
+        tbody td { padding: 12px 16px; border-bottom: 1px solid #F4F1EB; font-size: 13px; vertical-align: middle; }
+        tbody tr:hover td { background-color: #F0FDF4; }
+
+        .hamburger-btn { display: none; background: none; border: none; font-size: 22px; color: #1A1814; cursor: pointer; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; }
+        .sidebar-overlay.show { display: block; }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.show { transform: translateX(0); }
+            .topbar { margin-left: 0; padding: 12px 16px; }
+            .main-content { margin-left: 0; padding: 16px 12px; }
+            .hamburger-btn { display: inline-block; }
+        }
+
+        @media print {
+            .sidebar, .topbar, .no-print { display: none !important; }
+            .main-content { margin-left: 0 !important; padding: 0 !important; }
+            body { background: white !important; }
+            .card { border: 1px solid #000 !important; box-shadow: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+    <div class="logo">
+        🌱 SoilTrack
+        <span>Chemistry Department</span>
+    </div>
+    <div class="nav-section">Main</div>
+    <a href="/">📊 Dashboard</a>
+    <a href="/samples">📋 All Samples</a>
+    <a href="/add">➕ Add Sample</a>
+    <a href="/lab-calculation">🧪 Lab Calculation</a>
+    <div class="nav-section">Reports & Archive</div>
+    <a href="/yearly-records" class="active">📅 Yearly Records</a>
+    <div class="nav-section">Settings</div>
+    <a href="/multiplication-factors">⚗️ Multiplication Factors</a>
+    <div class="nav-section">Export</div>
+    <a href="/export">⬇ Export to Excel</a>
+    {% if session.get('role') == 'admin' %}
+    <div class="nav-section">Admin</div>
+    <a href="/users">👥 User Management</a>
+    {% endif %}
+    <div class="sidebar-bottom">
+        <div class="nav-section">Account</div>
+        <a href="/logout" style="color:#FCA5A5;font-weight:700;">🚪 Logout</a>
+    </div>
+</div>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div class="topbar-title">
+        <button class="hamburger-btn" onclick="openSidebar()" aria-label="Open menu">☰</button>
+        📅 Yearly Records & Annual Soil Archive
+    </div>
+    <div class="no-print" style="display:flex;gap:10px;align-items:center;">
+        <button onclick="window.print()" class="btn btn-sm btn-outline-success fw-bold" style="border-radius:8px;padding:7px 16px;">
+            🖨️ Print Annual Report
+        </button>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="main-content">
+
+    <!-- Year Filter Bar -->
+    <div class="card p-3 mb-4 no-print" style="background:#F0FDF4; border:1px solid #BBF7D0;">
+        <form method="GET" action="/yearly-records" class="d-flex align-items-center gap-3 flex-wrap">
+            <label class="fw-bold" style="color:#166534; font-size:14px;">📅 Select Academic / Collection Year:</label>
+            <select name="year" onchange="this.form.submit()" class="form-select style-select" style="max-width:220px; border-radius:8px; font-weight:700; border-color:#4A7C59;">
+                <option value="">All Academic Years</option>
+                {% for y in years %}
+                    <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+            {% if selected_year %}
+                <a href="/yearly-records" class="btn btn-sm btn-link text-decoration-none" style="color:#166534; font-weight:600;">Reset Filter</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Official College Report Header -->
+    <div class="card p-4 mb-4 text-center" style="border:2px solid #166534; background:#FAFAF7;">
+        <div style="font-size:14px; font-weight:900; color:#166534; text-transform:uppercase; letter-spacing:0.5px;">
+            R. E. Society's R. P. Gogate College of Arts & Science and R. V. Jogalekar College of Commerce (Autonomous), Ratnagiri
+        </div>
+        <div style="font-size:13px; font-weight:800; color:#0F172A; margin-top:3px;">
+            Department of Chemistry & Soil Science
+        </div>
+        <div style="font-size:15px; font-weight:900; color:#166534; margin-top:8px; text-decoration:underline;">
+            ANNUAL SOIL TESTING &amp; FERTILITY REPORT — {% if selected_year %}{{ selected_year }}{% else %}ALL ACADEMIC YEARS{% endif %}
+        </div>
+    </div>
+
+    <!-- Stat Cards (Yearly Totals & Revenue) -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card" style="background:#4A7C59">
+                <div class="stat-label">Total Samples</div>
+                <div class="stat-value">{{ total_count }}</div>
+                <div class="stat-sub">Tested in {% if selected_year %}{{ selected_year }}{% else %}All Years{% endif %}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card" style="background:#2A5080">
+                <div class="stat-label">Govt Scheme</div>
+                <div class="stat-value">{{ govt_count }}</div>
+                <div class="stat-sub">Free Govt Samples</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card" style="background:#5A2D9E">
+                <div class="stat-label">Private Samples</div>
+                <div class="stat-value">{{ pvt_count }}</div>
+                <div class="stat-sub">Rate Card Paid Tests</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card" style="background:#B45309">
+                <div class="stat-label">Total Fee Revenue</div>
+                <div class="stat-value">₹ {{ "%.2f"|format(total_revenue) }}</div>
+                <div class="stat-sub">Private Testing Fees</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Yearly Average Soil Parameter Summary Card -->
+    <div class="card p-4 mb-4">
+        <h6 style="font-weight:800; color:#166534; margin-bottom:14px;">🧪 Average Soil Fertility Profile ({% if selected_year %}{{ selected_year }}{% else %}Overall{% endif %})</h6>
+        <div class="row text-center g-2">
+            <div class="col-4 col-md-2">
+                <div style="background:#F8FAFC; border:1px solid #CBD5E1; border-radius:8px; padding:10px;">
+                    <div style="font-size:10px; font-weight:700; color:#64748B;">AVG pH</div>
+                    <div style="font-size:18px; font-weight:800; color:#0F172A; margin-top:2px;">{{ avg_ph or '—' }}</div>
+                </div>
+            </div>
+            <div class="col-4 col-md-2">
+                <div style="background:#F8FAFC; border:1px solid #CBD5E1; border-radius:8px; padding:10px;">
+                    <div style="font-size:10px; font-weight:700; color:#64748B;">AVG EC</div>
+                    <div style="font-size:18px; font-weight:800; color:#0F172A; margin-top:2px;">{{ avg_ec or '—' }}</div>
+                </div>
+            </div>
+            <div class="col-4 col-md-2">
+                <div style="background:#F8FAFC; border:1px solid #CBD5E1; border-radius:8px; padding:10px;">
+                    <div style="font-size:10px; font-weight:700; color:#64748B;">AVG OC (%)</div>
+                    <div style="font-size:18px; font-weight:800; color:#0F172A; margin-top:2px;">{{ avg_oc or '—' }}</div>
+                </div>
+            </div>
+            <div class="col-4 col-md-2">
+                <div style="background:#F8FAFC; border:1px solid #CBD5E1; border-radius:8px; padding:10px;">
+                    <div style="font-size:10px; font-weight:700; color:#64748B;">AVG N (kg/ha)</div>
+                    <div style="font-size:18px; font-weight:800; color:#0F172A; margin-top:2px;">{{ avg_n or '—' }}</div>
+                </div>
+            </div>
+            <div class="col-4 col-md-2">
+                <div style="background:#F8FAFC; border:1px solid #CBD5E1; border-radius:8px; padding:10px;">
+                    <div style="font-size:10px; font-weight:700; color:#64748B;">AVG P (kg/ha)</div>
+                    <div style="font-size:18px; font-weight:800; color:#0F172A; margin-top:2px;">{{ avg_p or '—' }}</div>
+                </div>
+            </div>
+            <div class="col-4 col-md-2">
+                <div style="background:#F8FAFC; border:1px solid #CBD5E1; border-radius:8px; padding:10px;">
+                    <div style="font-size:10px; font-weight:700; color:#64748B;">AVG K (kg/ha)</div>
+                    <div style="font-size:18px; font-weight:800; color:#0F172A; margin-top:2px;">{{ avg_k or '—' }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Village Breakdown Table -->
+    <div class="card p-4 mb-4">
+        <h6 style="font-weight:800; color:#166534; margin-bottom:14px;">🏘️ Village Sample Breakdown ({% if selected_year %}{{ selected_year }}{% else %}All Years{% endif %})</h6>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Village Name</th>
+                        <th style="text-align:center;">Total Samples Tested</th>
+                        <th style="text-align:center;">Govt Scheme</th>
+                        <th style="text-align:center;">Private Rate Card</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v_name, stats in village_stats.items() %}
+                    <tr>
+                        <td style="font-weight:700; color:#2D5A3D;">{{ v_name }}</td>
+                        <td style="text-align:center; font-weight:700;">{{ stats.total }}</td>
+                        <td style="text-align:center;"><span class="badge bg-primary">{{ stats.govt }}</span></td>
+                        <td style="text-align:center;"><span class="badge bg-purple" style="background:#5A2D9E;">{{ stats.pvt }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Sample Register Table -->
+    <div class="card p-4">
+        <h6 style="font-weight:800; color:#166534; margin-bottom:14px;">📋 Registered Sample Register ({% if selected_year %}{{ selected_year }}{% else %}All Years{% endif %})</h6>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sample ID</th>
+                        <th>Village</th>
+                        <th>Farmer Name</th>
+                        <th>Source</th>
+                        <th>Collection Year</th>
+                        <th>pH</th>
+                        <th>N</th>
+                        <th>P</th>
+                        <th>K</th>
+                        <th>Fee (₹)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in samples %}
+                    <tr>
+                        <td style="font-weight:700; font-family:monospace; color:#166534;">{{ s.sample_id }}</td>
+                        <td>{{ s.village }}</td>
+                        <td>{{ s.farmer_name or '—' }}</td>
+                        <td>
+                            {% if s.sample_source == 'govt' or s.sample_type == 'Government' %}
+                                <span class="badge bg-primary">Govt</span>
+                            {% else %}
+                                <span class="badge bg-purple" style="background:#5A2D9E;">Private</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-family:monospace;">{{ s.collection_date or '—' }}</td>
+                        <td>{{ s.ph or '—' }}</td>
+                        <td>{{ s.nitrogen or '—' }}</td>
+                        <td>{{ s.phosphorus or '—' }}</td>
+                        <td>{{ s.potassium or '—' }}</td>
+                        <td style="font-weight:700;">₹ {{ "%.2f"|format(s.testing_fee or 0.0) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-4 pt-3" style="border-top:1.5px solid #CBD5E1;">
+            <div style="font-size:11px; color:#64748B; max-width:60%;">
+                * Official Annual Soil Testing &amp; Fertility Report generated by SoilTrack System.<br>
+                Department of Chemistry &amp; Soil Science, R. P. Gogate &amp; R. V. Jogalekar College, Ratnagiri.
+            </div>
+            <div style="text-align:center;">
+                <div style="width:140px; border-bottom:1.5px solid #0F172A; height:35px; margin-bottom:4px;"></div>
+                <div style="font-size:11px; font-weight:700; color:#0F172A;">HOD / Authorized Signatory</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('show');
+    document.getElementById('sidebarOverlay').classList.add('show');
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('show');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

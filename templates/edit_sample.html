@@ -108,9 +108,6 @@
         <button class="hamburger-btn" onclick="openSidebar()" aria-label="Open menu">☰</button>
         Edit Sample
     </div>
-    <div style="display:flex;gap:10px;align-items:center;">
-        <a href="/logout" class="btn btn-sm btn-outline-danger fw-bold" style="border-radius:8px;padding:6px 14px;font-size:12.5px;text-decoration:none;">🚪 Logout</a>
-    </div>
 </div>
 <div class="main-content">
     <div class="card">
@@ -125,6 +122,22 @@
                 <div class="col-md-6">
                     <label>Village Name</label>
                     <input type="text" name="village" value="{{ sample.village }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label>Taluka / Block (Optional)</label>
+                    <select name="taluka" id="taluka-select">
+                        <option value="">-- Auto-Detect / None --</option>
+                        <option value="Ratnagiri" {% if sample.taluka == 'Ratnagiri' or 'ratnagiri' in (sample.address or '')|lower %}selected{% endif %}>Ratnagiri (RT)</option>
+                        <option value="Sangameshwar" {% if sample.taluka == 'Sangameshwar' or 'sangameshwar' in (sample.address or '')|lower %}selected{% endif %}>Sangameshwar (SG)</option>
+                        <option value="Lanja" {% if sample.taluka == 'Lanja' or 'lanja' in (sample.address or '')|lower %}selected{% endif %}>Lanja (LJ)</option>
+                        <option value="Chiplun" {% if sample.taluka == 'Chiplun' or 'chiplun' in (sample.address or '')|lower %}selected{% endif %}>Chiplun (CH)</option>
+                        <option value="Rajapur" {% if sample.taluka == 'Rajapur' or 'rajapur' in (sample.address or '')|lower %}selected{% endif %}>Rajapur (RJ)</option>
+                        <option value="Guhagar" {% if sample.taluka == 'Guhagar' or 'guhagar' in (sample.address or '')|lower %}selected{% endif %}>Guhagar (GH)</option>
+                        <option value="Dapoli" {% if sample.taluka == 'Dapoli' or 'dapoli' in (sample.address or '')|lower %}selected{% endif %}>Dapoli (DP)</option>
+                        <option value="Khed" {% if sample.taluka == 'Khed' or 'khed' in (sample.address or '')|lower %}selected{% endif %}>Khed (KH)</option>
+                        <option value="Mandangad" {% if sample.taluka == 'Mandangad' or 'mandangad' in (sample.address or '')|lower %}selected{% endif %}>Mandangad (MN)</option>
+                    </select>
+                    <div class="hint">Update Taluka for sample location code</div>
                 </div>
                 <div class="col-md-6">
                     <label>Sample Source</label>

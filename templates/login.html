@@ -20,7 +20,7 @@
             position: relative;
         }
 
-        /* ── Floating Leaf Particles (Task 8) ── */
+        /* ── Floating Leaf Particles ── */
         .leaf-particles {
             position: fixed;
             inset: 0;
@@ -47,6 +47,39 @@
             100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
         }
 
+        /* ── Drifting seeds / pollen (Agriculture theme) ── */
+        .seed-particles {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+        .seed {
+            position: absolute;
+            top: -30px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #F4E9C9 0%, rgba(244,233,201,0) 70%);
+            opacity: 0;
+            animation: seedDrift linear infinite;
+        }
+        .seed:nth-child(1) { left: 12%; animation-duration: 11s; animation-delay: 0.5s; }
+        .seed:nth-child(2) { left: 33%; animation-duration: 13s; animation-delay: 2.5s; }
+        .seed:nth-child(3) { left: 58%; animation-duration: 10s; animation-delay: 1s; }
+        .seed:nth-child(4) { left: 74%; animation-duration: 14s; animation-delay: 4s; }
+        .seed:nth-child(5) { left: 91%; animation-duration: 12s; animation-delay: 3s; }
+        .seed:nth-child(6) { left: 20%; animation-duration: 15s; animation-delay: 6s; }
+
+        @keyframes seedDrift {
+            0% { transform: translate(0, 0); opacity: 0; }
+            10% { opacity: 0.6; }
+            50% { transform: translate(25px, 50vh); }
+            90% { opacity: 0.4; }
+            100% { transform: translate(-15px, 105vh); opacity: 0; }
+        }
+
         /* ── Outer card wrapper ── */
         .page-card {
             display: flex;
@@ -71,6 +104,7 @@
             justify-content: flex-end;
             padding: 48px;
             overflow: hidden;
+            background: linear-gradient(180deg, #F4F1EB 0%, #EEF3EC 100%);
         }
 
         .botanical-panel svg.bg-art {
@@ -80,6 +114,49 @@
             height: 100%;
             pointer-events: none;
             display: block;
+        }
+
+        /* Sun glow, gently pulsing */
+        .sun-glow {
+            animation: sunPulse 6s ease-in-out infinite;
+            transform-origin: center;
+        }
+        @keyframes sunPulse {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(1.08); }
+        }
+
+        /* Swaying wheat/grass stalks */
+        .stalk {
+            transform-origin: bottom center;
+            animation: sway 4.5s ease-in-out infinite;
+        }
+        .stalk.s2 { animation-duration: 5.2s; animation-delay: 0.3s; }
+        .stalk.s3 { animation-duration: 3.8s; animation-delay: 0.6s; }
+        .stalk.s4 { animation-duration: 5s; animation-delay: 0.9s; }
+        .stalk.s5 { animation-duration: 4.2s; animation-delay: 1.2s; }
+        .stalk.s6 { animation-duration: 4.8s; animation-delay: 0.2s; }
+        .stalk.s7 { animation-duration: 4s; animation-delay: 1.5s; }
+        .stalk.s8 { animation-duration: 5.4s; animation-delay: 0.7s; }
+
+        @keyframes sway {
+            0%, 100% { transform: rotate(-4deg); }
+            50% { transform: rotate(4deg); }
+        }
+
+        /* Growing sprout loop */
+        .sprout {
+            transform-origin: bottom center;
+            animation: grow 6s ease-in-out infinite;
+        }
+        .sprout.sp2 { animation-delay: 1.5s; }
+        .sprout.sp3 { animation-delay: 3s; }
+
+        @keyframes grow {
+            0% { transform: scaleY(0.2); opacity: 0.3; }
+            35% { transform: scaleY(1); opacity: 1; }
+            80% { transform: scaleY(1); opacity: 1; }
+            100% { transform: scaleY(0.2); opacity: 0.3; }
         }
 
         .panel-text {
@@ -121,7 +198,11 @@
             margin-bottom: 28px;
         }
 
-        .panel-badge span { width: 7px; height: 7px; background: #4A7C59; border-radius: 50%; display: inline-block; }
+        .panel-badge span { width: 7px; height: 7px; background: #4A7C59; border-radius: 50%; display: inline-block; animation: badgePulse 2s ease-in-out infinite; }
+        @keyframes badgePulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(74,124,89,0.5); }
+            50% { opacity: 0.6; box-shadow: 0 0 0 4px rgba(74,124,89,0); }
+        }
 
         /* ── Right login panel ── */
         .login-panel {
@@ -184,17 +265,33 @@
             .panel-text h1 { font-size: 26px; }
             .login-panel { width: 100%; min-width: unset; padding: 28px 24px; }
         }
+
+        @media (prefers-reduced-motion: reduce) {
+            .leaf-particle, .seed, .sun-glow, .stalk, .sprout, .panel-badge span {
+                animation: none !important;
+            }
+        }
     </style>
 </head>
 <body>
 
-<!-- Floating Leaf Animation (Task 8) -->
+<!-- Floating Leaf Animation -->
 <div class="leaf-particles">
     <svg class="leaf-particle" viewBox="0 0 24 24" fill="#4A7C59"><path d="M17,8C8,10 59,16 3,21C3,21 7,15 11,13C16,10.5 17,8 17,8Z"/></svg>
     <svg class="leaf-particle" viewBox="0 0 24 24" fill="#6BAF7A"><path d="M17,8C8,10 59,16 3,21C3,21 7,15 11,13C16,10.5 17,8 17,8Z"/></svg>
     <svg class="leaf-particle" viewBox="0 0 24 24" fill="#3A6B4A"><path d="M17,8C8,10 59,16 3,21C3,21 7,15 11,13C16,10.5 17,8 17,8Z"/></svg>
     <svg class="leaf-particle" viewBox="0 0 24 24" fill="#7DC48A"><path d="M17,8C8,10 59,16 3,21C3,21 7,15 11,13C16,10.5 17,8 17,8Z"/></svg>
     <svg class="leaf-particle" viewBox="0 0 24 24" fill="#4A7C59"><path d="M17,8C8,10 59,16 3,21C3,21 7,15 11,13C16,10.5 17,8 17,8Z"/></svg>
+</div>
+
+<!-- Drifting seed / pollen animation -->
+<div class="seed-particles">
+    <div class="seed"></div>
+    <div class="seed"></div>
+    <div class="seed"></div>
+    <div class="seed"></div>
+    <div class="seed"></div>
+    <div class="seed"></div>
 </div>
 
 <div class="page-card">
@@ -212,52 +309,75 @@
                 <stop offset="0%" stop-color="#C5D9C8" stop-opacity="0.4"/>
                 <stop offset="100%" stop-color="#EDEAE2" stop-opacity="0"/>
             </radialGradient>
+            <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#FCEFC7" stop-opacity="0.9"/>
+                <stop offset="100%" stop-color="#FCEFC7" stop-opacity="0"/>
+            </radialGradient>
         </defs>
 
         <!-- Mist blobs -->
         <ellipse cx="200" cy="780" rx="280" ry="160" fill="url(#mistBot)"/>
         <ellipse cx="520" cy="80" rx="220" ry="130" fill="url(#mistTop)"/>
 
+        <!-- Gentle pulsing sun, upper right -->
+        <circle class="sun-glow" cx="560" cy="110" r="90" fill="url(#sunGrad)"/>
+
         <!-- BOTTOM-LEFT TREE -->
         <path d="M-10,900 Q40,820 80,750 Q110,690 130,640" stroke="#3D2B1F" stroke-width="7" fill="none" stroke-linecap="round"/>
         <path d="M130,640 Q180,580 240,530 Q290,490 350,460" stroke="#3D2B1F" stroke-width="5" fill="none" stroke-linecap="round"/>
         <path d="M130,640 Q100,590 80,540 Q60,500 70,460" stroke="#4A3728" stroke-width="3.5" fill="none" stroke-linecap="round"/>
         <path d="M240,530 Q260,490 300,460 Q330,440 360,420" stroke="#4A3728" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <path d="M290,490 Q310,460 340,440" stroke="#4A3728" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <path d="M350,460 Q380,440 410,430 Q440,420 470,425" stroke="#5A4535" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <path d="M360,420 Q390,400 420,390 Q450,382 480,388" stroke="#5A4535" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-        <path d="M470,425 Q500,415 530,420" stroke="#6A5545" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-        <path d="M80,540 Q50,510 30,485" stroke="#5A4535" stroke-width="2" fill="none" stroke-linecap="round"/>
 
         <!-- LEAVES -->
         <ellipse cx="55" cy="760" rx="22" ry="14" fill="#6BAF7A" opacity="0.85" transform="rotate(-30 55 760)"/>
         <ellipse cx="85" cy="745" rx="26" ry="15" fill="#7DC48A" opacity="0.9" transform="rotate(-15 85 745)"/>
         <ellipse cx="110" cy="730" rx="20" ry="12" fill="#5A9E6A" opacity="0.8" transform="rotate(-40 110 730)"/>
-        <ellipse cx="40" cy="740" rx="18" ry="11" fill="#8ACC94" opacity="0.75" transform="rotate(20 40 740)"/>
         <ellipse cx="200" cy="555" rx="24" ry="13" fill="#7DC48A" opacity="0.9" transform="rotate(-50 200 555)"/>
         <ellipse cx="220" cy="540" rx="20" ry="12" fill="#6BAF7A" opacity="0.85" transform="rotate(-30 220 540)"/>
-        <ellipse cx="165" cy="562" rx="18" ry="11" fill="#5A9E6A" opacity="0.8" transform="rotate(-65 165 562)"/>
         <ellipse cx="240" cy="525" rx="22" ry="12" fill="#8ACC94" opacity="0.88" transform="rotate(-20 240 525)"/>
         <ellipse cx="320" cy="468" rx="22" ry="12" fill="#7DC48A" opacity="0.9" transform="rotate(-35 320 468)"/>
         <ellipse cx="345" cy="455" rx="19" ry="11" fill="#6BAF7A" opacity="0.85" transform="rotate(-55 345 455)"/>
-        <ellipse cx="420" cy="428" rx="18" ry="10" fill="#7DC48A" opacity="0.8" transform="rotate(-25 420 428)"/>
 
-        <!-- TOP-RIGHT BRANCH -->
-        <path d="M710,0 Q660,60 610,120 Q570,165 530,205" stroke="#3D2B1F" stroke-width="5.5" fill="none" stroke-linecap="round"/>
-        <path d="M610,120 Q570,100 530,90 Q495,82 465,88" stroke="#4A3728" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-        <path d="M530,205 Q490,225 450,240 Q415,252 380,258" stroke="#4A3728" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <ellipse cx="570" cy="140" rx="22" ry="12" fill="#7DC48A" opacity="0.9" transform="rotate(45 570 140)"/>
-        <ellipse cx="500" cy="98" rx="20" ry="11" fill="#7DC48A" opacity="0.85" transform="rotate(20 500 98)"/>
+        <!-- Swaying wheat / grass stalks along the base -->
+        <g stroke="#8AA05A" stroke-width="3" stroke-linecap="round" fill="none">
+            <path class="stalk s1" d="M420,900 Q425,830 415,780" />
+            <path class="stalk s2" d="M445,900 Q452,820 438,765" />
+            <path class="stalk s3" d="M470,900 Q476,835 462,785" />
+            <path class="stalk s4" d="M495,900 Q503,815 486,760" />
+            <path class="stalk s5" d="M520,900 Q525,830 512,780" />
+            <path class="stalk s6" d="M545,900 Q553,825 536,770" />
+            <path class="stalk s7" d="M570,900 Q575,835 561,785" />
+            <path class="stalk s8" d="M595,900 Q602,820 585,765" />
+        </g>
+        <!-- Wheat ear heads -->
+        <g fill="#D9B45A">
+            <ellipse class="stalk s1" cx="415" cy="775" rx="6" ry="16" transform="rotate(-8 415 775)"/>
+            <ellipse class="stalk s2" cx="438" cy="760" rx="6" ry="16" transform="rotate(-8 438 760)"/>
+            <ellipse class="stalk s3" cx="462" cy="780" rx="6" ry="16" transform="rotate(-8 462 780)"/>
+            <ellipse class="stalk s4" cx="486" cy="755" rx="6" ry="16" transform="rotate(-8 486 755)"/>
+            <ellipse class="stalk s5" cx="512" cy="775" rx="6" ry="16" transform="rotate(-8 512 775)"/>
+            <ellipse class="stalk s6" cx="536" cy="765" rx="6" ry="16" transform="rotate(-8 536 765)"/>
+            <ellipse class="stalk s7" cx="561" cy="780" rx="6" ry="16" transform="rotate(-8 561 780)"/>
+            <ellipse class="stalk s8" cx="585" cy="760" rx="6" ry="16" transform="rotate(-8 585 760)"/>
+        </g>
+
+        <!-- Growing sprouts, lower center -->
+        <g stroke="#3A6B4A" stroke-width="3" fill="none" stroke-linecap="round">
+            <path class="sprout sp1" d="M120,900 Q118,860 100,835 M120,900 Q124,865 145,845" />
+            <path class="sprout sp2" d="M170,900 Q168,855 150,828 M170,900 Q174,860 195,838" />
+            <path class="sprout sp3" d="M260,900 Q258,858 240,832 M260,900 Q264,862 285,840" />
+        </g>
     </svg>
 
-    <!-- Text overlay -->
+    <!-- Top Badge -->
     <div class="panel-badge">
         <span></span> Soil Testing & Analysis System
     </div>
 
+    <!-- Text Overlay -->
     <div class="panel-text">
         <h1>Know Your<br>Soil. Grow<br>Better.</h1>
-        <p>Chemistry Department portal for soil sample analysis, nutrient tracking, and health reports.</p>
+        <p>Department of Chemistry &amp; Soil Science portal for sample testing, NPK nutrient analysis, and soil health cards.</p>
     </div>
 </div>
 
@@ -273,64 +393,111 @@
             <div class="logo-sub">Chemistry Department — Soil Testing System</div>
         </div>
 
-        <div class="login-title">Welcome back</div>
-        <div class="login-sub">Sign in to continue to SoilTrack</div>
+        {% if show_admin %}
+            <!-- ══ ADMIN PORTAL UI ══ -->
+            <div class="login-title">👑 System Admin Login</div>
+            <div class="login-sub">Administrator control portal — manage users & system settings</div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="alert-box {% if category == 'success' %}alert-success{% endif %}">
-                {{ '✅' if category == 'success' else '⚠' }} {{ message }}
-              </div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-
-        {% if error %}
-        <div class="alert-box">⚠ {{ error }}</div>
-        {% endif %}
-
-        <!-- Role Selection Tabs (Chemist, HOD, Admin) -->
-        <div class="role-tabs">
-            <button type="button" class="role-tab active" data-role="chemist" onclick="selectRole('chemist')">
-                <span class="r-icon">🔬</span>Chemist
-            </button>
-            <button type="button" class="role-tab" data-role="hod" onclick="selectRole('hod')">
-                <span class="r-icon">🎓</span>HOD
-            </button>
-            <button type="button" class="role-tab" data-role="admin" onclick="selectRole('admin')">
-                <span class="r-icon">👑</span>Admin
-            </button>
-        </div>
-
-        <div class="role-note show" id="note-chemist">Chemist (Technician) can add samples, run lab calculations, and generate reports.</div>
-        <div class="role-note" id="note-hod">HOD (Head of Dept.) has supervisory access to review samples, lab calculations, and reports.</div>
-        <div class="role-note" id="note-admin">Admin has full system access — manage users, reset passwords, update multiplication factors.</div>
-
-        <!-- Login Form -->
-        <form method="POST" action="/login">
-            <!-- Task 4: CSRF Token -->
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <input type="hidden" name="role" id="role-input" value="chemist">
-
-            <div class="mb-3">
-                <label class="form-label">Username</label>
-                <input type="text" class="form-control" name="username" placeholder="Enter your username" required>
+            <div style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 10px; padding: 11px 14px; margin: 16px 0; color: #065F46; font-size: 12.5px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                <span>🛡️</span> System Administrator Portal
             </div>
-            <div class="mb-3">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <label class="form-label mb-0">Password</label>
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal" style="font-size:12px; font-weight:600; color:#4A7C59; text-decoration:none;">🔑 Forgot Password?</a>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert-box {% if category == 'success' %}alert-success{% endif %}">
+                    {{ '✅' if category == 'success' else '⚠' }} {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            {% if error %}
+            <div class="alert-box">⚠ {{ error }}</div>
+            {% endif %}
+
+            <!-- Admin Login Form (Direct Admin Login — No Role Tabs) -->
+            <form method="POST" action="/admin">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="role" value="admin">
+                <input type="hidden" name="show_admin" value="true">
+
+                <div class="mb-3">
+                    <label class="form-label">Admin Username</label>
+                    <input type="text" class="form-control" name="username" placeholder="Enter admin username" required>
                 </div>
-                <input type="password" class="form-control" name="password" placeholder="Enter your password" required>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label mb-0">Admin Password</label>
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal" style="font-size:12px; font-weight:600; color:#4A7C59; text-decoration:none;">🔑 Forgot Password?</a>
+                    </div>
+                    <input type="password" class="form-control" name="password" placeholder="Enter admin password" required>
+                </div>
+
+                <button type="submit" class="btn-login" style="background: #166534;">🔐 Sign In as Administrator</button>
+            </form>
+
+            <div class="register-link text-center mt-3">
+                <a href="/login" style="color: #4A7C59; font-weight: 600; text-decoration: none;">← Back to Staff Login</a>
             </div>
 
-            <button type="submit" class="btn-login">🔐 Sign In</button>
-        </form>
+        {% else %}
+            <!-- ══ STAFF LOGIN UI (Chemist & HOD ONLY) ══ -->
+            <div class="login-title">Welcome back</div>
+            <div class="login-sub">Sign in to continue to SoilTrack</div>
 
-        <div class="register-link">
-            New staff account? <a href="/register">Register here</a>
-        </div>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert-box {% if category == 'success' %}alert-success{% endif %}">
+                    {{ '✅' if category == 'success' else '⚠' }} {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            {% if error %}
+            <div class="alert-box">⚠ {{ error }}</div>
+            {% endif %}
+
+            <!-- Role Selection Tabs (Chemist & HOD ONLY — No Admin Tab) -->
+            <div class="role-tabs">
+                <button type="button" class="role-tab active" data-role="chemist" onclick="selectRole('chemist')">
+                    <span class="r-icon">🔬</span>Chemist
+                </button>
+                <button type="button" class="role-tab" data-role="hod" onclick="selectRole('hod')">
+                    <span class="r-icon">🎓</span>HOD
+                </button>
+            </div>
+
+            <div class="role-note show" id="note-chemist">Chemist (Technician) can add samples, run lab calculations, and generate reports.</div>
+            <div class="role-note" id="note-hod">HOD (Head of Dept.) has supervisory access to review samples, lab calculations, and reports.</div>
+
+            <!-- Staff Login Form -->
+            <form method="POST" action="/login">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="role" id="role-input" value="chemist">
+                <input type="hidden" name="show_admin" value="false">
+
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-control" name="username" placeholder="Enter your username" required>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label mb-0">Password</label>
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal" style="font-size:12px; font-weight:600; color:#4A7C59; text-decoration:none;">🔑 Forgot Password?</a>
+                    </div>
+                    <input type="password" class="form-control" name="password" placeholder="Enter your password" required>
+                </div>
+
+                <button type="submit" class="btn-login">🔐 Sign In</button>
+            </form>
+
+            <div class="register-link">
+                New staff account? <a href="/register">Register here</a>
+            </div>
+        {% endif %}
 
     </div>
 </div>
@@ -386,6 +553,11 @@ function selectRole(role) {
     const note = document.getElementById(`note-${role}`);
     if (note) note.classList.add('show');
 }
+{% if show_admin %}
+document.addEventListener("DOMContentLoaded", function() {
+    selectRole('admin');
+});
+{% endif %}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

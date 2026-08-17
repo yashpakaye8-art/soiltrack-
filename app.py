@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import csv
 import io
 import os
+import re
 
 load_dotenv()
 
@@ -92,6 +93,7 @@ class Sample(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sample_id = db.Column(db.String(50), unique=True, nullable=False)
     village = db.Column(db.String(100), nullable=False)
+    taluka = db.Column(db.String(100))
     sample_type = db.Column(db.String(20))
     farmer_name = db.Column(db.String(100))
     collection_date = db.Column(db.String(20))
@@ -305,28 +307,14 @@ def generate_sample_id(village, taluka=None, address=None):
     v_code = village[:3].upper() if len(village) >= 3 else village.upper().ljust(3, 'X')
     t_code = detect_taluka_code(taluka, address, village)
 
-    standard_prefix = v_code
-    existing = Sample.query.filter(Sample.sample_id.like(f"{standard_prefix}%")).all()
-    
-    if existing:
-        has_location_conflict = False
-        if t_code:
-            for s in existing:
-                s_t_code = detect_taluka_code(getattr(s, 'taluka', ''), s.address, s.village)
-                if s_t_code and s_t_code != t_code:
-                    has_location_conflict = True
-                    break
-        
-        # If ID clash exists from a different Taluka, apply Taluka prefix (e.g. SG-KOL01)
-        if has_location_conflict and t_code:
-            prefix = f"{t_code}-{v_code}"
-            cnt = Sample.query.filter(Sample.sample_id.like(f"{prefix}%")).count()
-            seq_str = str(cnt + 1).zfill(2)
-            return f"{prefix}{seq_str}"
+    if t_code:
+        prefix = f"{t_code}-{v_code}"
+    else:
+        prefix = v_code
 
-    cnt = len(existing)
+    cnt = Sample.query.filter(Sample.sample_id.like(f"{prefix}%")).count()
     seq_str = str(cnt + 1).zfill(2)
-    return f"{v_code}{seq_str}"
+    return f"{prefix}{seq_str}"
 
 def get_fertility_score(ph, nitrogen, phosphorus, potassium):
     """Returns (category, ratio) — same Fertile/Moderate/Poor logic as before,
@@ -513,16 +501,23 @@ def sync_lab_tables(sample):
 
 # ── Auth Routes ──
 @app.route('/login', methods=['GET'])
+@app.route('/login/admin', methods=['GET'])
+@app.route('/admin', methods=['GET'])
 def login():
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
-    return render_template('login.html', error=None)
+    
+    show_admin = (request.path in ['/admin', '/login/admin']) or (request.args.get('role') == 'admin') or (request.args.get('admin') == 'true')
+    return render_template('login.html', error=None, show_admin=show_admin)
 
 @app.route('/login', methods=['POST'])
+@app.route('/login/admin', methods=['POST'])
+@app.route('/admin', methods=['POST'])
 def login_post():
     username = request.form.get('username', '').strip()
     password = request.form.get('password', '')
     role_selected = request.form.get('role', 'chemist')
+    show_admin = (request.path in ['/admin', '/login/admin']) or (request.form.get('show_admin') == 'true') or (role_selected == 'admin')
 
     user = User.query.filter_by(username=username).first()
 
@@ -532,7 +527,7 @@ def login_post():
             elapsed = (datetime.now() - user.last_failed_at).total_seconds()
             if elapsed < 900:  # 15 minutes
                 remaining_mins = max(1, int((900 - elapsed) // 60 + 1))
-                return render_template('login.html', error=f'Too many failed attempts. Account locked. Please try again in {remaining_mins} minute(s).')
+                return render_template('login.html', error=f'Too many failed attempts. Account locked. Please try again in {remaining_mins} minute(s).', show_admin=show_admin)
             else:
                 user.failed_attempts = 0
                 user.last_failed_at = None
@@ -548,15 +543,15 @@ def login_post():
                 err_msg = f'Invalid username or password. ({remaining} attempt(s) remaining before account lockout)'
             else:
                 err_msg = 'Too many failed attempts. Account locked for 15 minutes.'
-            return render_template('login.html', error=err_msg)
-        return render_template('login.html', error='Invalid username or password.')
+            return render_template('login.html', error=err_msg, show_admin=show_admin)
+        return render_template('login.html', error='Invalid username or password.', show_admin=show_admin)
 
     # Task 2: Validate selected role matches user.role
     user_role = user.role or 'chemist'
     if user_role != role_selected and not (user_role == 'staff' and role_selected == 'chemist'):
         user_label = ROLE_LABELS.get(user_role, user_role.title())
         selected_label = ROLE_LABELS.get(role_selected, role_selected.title())
-        return render_template('login.html', error=f'This account is registered as "{user_label}", not "{selected_label}". Please select the correct role.')
+        return render_template('login.html', error=f'This account is registered as "{user_label}", not "{selected_label}". Please select the correct role.', show_admin=show_admin)
 
     # Reset failed login counter on success
     if user.failed_attempts or user.last_failed_at:
@@ -695,6 +690,73 @@ def dashboard():
         pvt_count=pvt_count,
         recent=recent)
 
+# ── Yearly Records & Annual Report Archive ──
+@app.route('/yearly-records')
+@login_required
+def yearly_records():
+    selected_year = request.args.get('year', '')
+    
+    # Extract all distinct collection years from database
+    raw_dates = [s.collection_date for s in Sample.query.all() if s.collection_date]
+    years = sorted(list(set(raw_dates)), reverse=True)
+    if not years:
+        years = ['2025-2026']
+
+    query = Sample.query
+    if selected_year:
+        query = query.filter(Sample.collection_date == selected_year)
+        
+    samples = query.all()
+    
+    # Annual statistics calculation
+    total_count = len(samples)
+    govt_count = sum(1 for s in samples if (s.sample_source == 'govt' or s.sample_type == 'Government'))
+    pvt_count = sum(1 for s in samples if (s.sample_source == 'private' or s.sample_type == 'Private' or not s.sample_source))
+    total_revenue = sum((s.testing_fee or 0.0) for s in samples if (s.sample_source == 'private' or s.sample_type == 'Private' or not s.sample_source))
+    
+    # Parameter Averages
+    ph_vals = [s.ph for s in samples if s.ph is not None]
+    ec_vals = [s.ec for s in samples if s.ec is not None]
+    oc_vals = [s.organic_carbon for s in samples if s.organic_carbon is not None]
+    n_vals = [s.nitrogen for s in samples if s.nitrogen is not None]
+    p_vals = [s.phosphorus for s in samples if s.phosphorus is not None]
+    k_vals = [s.potassium for s in samples if s.potassium is not None]
+    
+    avg_ph = round(sum(ph_vals)/len(ph_vals), 2) if ph_vals else None
+    avg_ec = round(sum(ec_vals)/len(ec_vals), 3) if ec_vals else None
+    avg_oc = round(sum(oc_vals)/len(oc_vals), 2) if oc_vals else None
+    avg_n = round(sum(n_vals)/len(n_vals), 1) if n_vals else None
+    avg_p = round(sum(p_vals)/len(p_vals), 1) if p_vals else None
+    avg_k = round(sum(k_vals)/len(k_vals), 1) if k_vals else None
+    
+    # Village breakdown for this year
+    village_stats = {}
+    for s in samples:
+        v = s.village or 'Unknown'
+        if v not in village_stats:
+            village_stats[v] = {'total': 0, 'govt': 0, 'pvt': 0}
+        village_stats[v]['total'] += 1
+        if s.sample_source == 'govt' or s.sample_type == 'Government':
+            village_stats[v]['govt'] += 1
+        else:
+            village_stats[v]['pvt'] += 1
+
+    return render_template('yearly_records.html',
+        years=years,
+        selected_year=selected_year,
+        samples=samples,
+        total_count=total_count,
+        govt_count=govt_count,
+        pvt_count=pvt_count,
+        total_revenue=total_revenue,
+        avg_ph=avg_ph,
+        avg_ec=avg_ec,
+        avg_oc=avg_oc,
+        avg_n=avg_n,
+        avg_p=avg_p,
+        avg_k=avg_k,
+        village_stats=village_stats)
+
 # ── Samples ──
 @app.route('/samples')
 @login_required
@@ -728,7 +790,7 @@ def save_sample():
         testing_fee = 0.0
 
     new_sample = Sample(
-        sample_id       = generate_sample_id(village, address=request.form.get('address')),
+        sample_id       = generate_sample_id(village, taluka=request.form.get('taluka'), address=request.form.get('address')),
         village         = village,
         sample_type     = request.form.get('sample_type'),
         farmer_name     = request.form.get('farmer_name'),
@@ -774,6 +836,7 @@ os.makedirs(TEMP_IMPORT_DIR, exist_ok=True)
 TARGET_FIELDS = [
     ('sample_id', 'Sample ID (For updating existing sample)', False),
     ('village', 'Village Name', True),
+    ('taluka', 'Taluka / Block', False),
     ('farmer_name', 'Farmer Full Name', False),
     ('phone_number', 'Mobile / Phone Number', False),
     ('address', 'Farmer Address', False),
@@ -801,6 +864,7 @@ def auto_detect_header(target_key, raw_headers):
     keywords = {
         'sample_id': ['sample id', 'sample_id', 'test id', 'lab no', 'sample no', 'code'],
         'village': ['village', 'gaon', 'gram', 'city', 'place', 'location'],
+        'taluka': ['taluka', 'taluk', 'block', 'tahsil', 'tehsil'],
         'farmer_name': ['farmer name', 'farmer', 'kisan', 'owner', 'holder'],
         'phone_number': ['phone number', 'phone', 'mobile', 'contact', 'cell', 'tel'],
         'address': ['farmer address', 'address', 'pata', 'street'],
@@ -1006,6 +1070,7 @@ def bulk_process_post():
     # User Mappings
     col_sample_id = request.form.get('map_sample_id', '')
     col_village = request.form.get('map_village', '')
+    col_taluka = request.form.get('map_taluka', '')
     col_farmer = request.form.get('map_farmer_name', '')
     col_phone = request.form.get('map_phone_number', '')
     col_address = request.form.get('map_address', '')
@@ -1096,6 +1161,7 @@ def bulk_process_post():
         mapped_sample_id = raw_mapped_id if (raw_mapped_id and not raw_mapped_id.isdigit() and len(raw_mapped_id) >= 3) else ''
 
         village = (r.get(col_village, '') if col_village else '').strip()
+        taluka = (r.get(col_taluka, '') if col_taluka else '').strip()
         
         # Check if existing sample exists by Sample ID OR by (Village + Farmer Name + Survey No)
         existing_sample = None
@@ -1176,16 +1242,8 @@ def bulk_process_post():
             updated_count += 1
             continue
 
-        # IF NEW SAMPLE: CREATE NEW RECORD WITH AUTO-GENERATED ID (JAM01, JAM02...)
-        code = village[:3].upper() if len(village) >= 3 else village.upper().ljust(3, 'X')
-        if code not in village_counts:
-            cnt = Sample.query.filter(Sample.sample_id.like(f"{code}%")).count()
-            village_counts[code] = cnt
-        village_counts[code] += 1
-
-        seq_num = village_counts[code]
-        seq_str = str(seq_num).zfill(2 if seq_num < 100 else len(str(seq_num)))
-        sample_id = f"{code}{seq_str}"
+        # IF NEW SAMPLE: CREATE NEW RECORD WITH AUTO-GENERATED ID (SG-PAL01, RT-PAL01, JAM01...)
+        sample_id = generate_sample_id(village, taluka=taluka, address=address)
 
         if not first_sample_id:
             first_sample_id = sample_id
@@ -1262,11 +1320,30 @@ def update_sample(id):
         testing_fee = 0.0
 
     sample.village         = request.form.get('village')
+    taluka_input           = request.form.get('taluka')
+    address_input          = request.form.get('address')
+
+    if hasattr(sample, 'taluka'):
+        sample.taluka = taluka_input
+
+    # Dynamic Region / Taluka Code & Sample ID Prefix Update
+    t_code = detect_taluka_code(taluka_input, address_input, sample.village)
+    v_code = sample.village[:3].upper() if (sample.village and len(sample.village) >= 3) else (sample.village.upper().ljust(3, 'X') if sample.village else 'SMP')
+    
+    curr_id = sample.sample_id or ''
+    seq_match = re.search(r'\d+$', curr_id)
+    seq_num = seq_match.group(0) if seq_match else '01'
+
+    if t_code:
+        sample.sample_id = f"{t_code}-{v_code}{seq_num}"
+    else:
+        sample.sample_id = f"{v_code}{seq_num}"
+
     sample.sample_type     = request.form.get('sample_type')
     sample.farmer_name     = request.form.get('farmer_name')
     sample.collection_date = request.form.get('collection_date')
     sample.phone_number    = request.form.get('phone_number')
-    sample.address         = request.form.get('address')
+    sample.address         = address_input
     sample.survey_number   = request.form.get('survey_number')
     sample.sample_source   = sample_source
     sample.scheme          = scheme
@@ -2092,9 +2169,11 @@ def generate_bill(id):
         return redirect(url_for('all_samples'))
     return render_template('bill_receipt.html', sample=sample)
 
+with app.app_context():
+    db.create_all()
+    seed_dilution_factors()
+    seed_admin_account()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        seed_dilution_factors()
-        seed_admin_account()
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)

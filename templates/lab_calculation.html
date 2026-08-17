@@ -18,6 +18,70 @@
         .sidebar-bottom { position: absolute; bottom: 0; width: 100%; border-top: 1px solid rgba(255,255,255,0.2); padding: 10px 0; }
         .topbar { background: white; padding: 15px 30px; border-bottom: 1px solid #DDD9CF; margin-left: 220px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .topbar-title { font-size: 18px; font-weight: 700; color: #1A1814; display: flex; align-items: center; gap: 10px; }
+
+        /* ── 🧪 Bubbling Chemistry Titration Animation ── */
+        @keyframes flaskBubble {
+            0% {
+                transform: translateY(0) scale(0.6);
+                opacity: 0.2;
+            }
+            50% {
+                opacity: 0.95;
+                transform: translateY(-9px) scale(1.15);
+            }
+            100% {
+                transform: translateY(-18px) scale(0.4);
+                opacity: 0;
+            }
+        }
+
+        @keyframes liquidGlow {
+            0%, 100% {
+                filter: drop-shadow(0 0 3px rgba(74, 124, 89, 0.4));
+                transform: rotate(0deg);
+            }
+            50% {
+                filter: drop-shadow(0 0 10px rgba(74, 124, 89, 0.8));
+                transform: rotate(5deg);
+            }
+        }
+
+        .flask-anim-box {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            font-size: 26px;
+            line-height: 1;
+            vertical-align: middle;
+            animation: liquidGlow 3s ease-in-out infinite;
+            margin-right: 6px;
+        }
+
+        .flask-bubble {
+            position: absolute;
+            top: -2px;
+            left: 6px;
+            width: 7px;
+            height: 7px;
+            background: #4A7C59;
+            border-radius: 50%;
+            animation: flaskBubble 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        .flask-bubble.b2 {
+            left: 14px;
+            animation-delay: 0.65s;
+            width: 6px;
+            height: 6px;
+            background: #2563EB;
+        }
+        .flask-bubble.b3 {
+            left: 20px;
+            animation-delay: 1.3s;
+            width: 5px;
+            height: 5px;
+            background: #9333EA;
+        }
         .main-content { margin-left: 220px; padding: 30px; }
         .card { border: 1px solid #DDD9CF; border-radius: 12px; background: white; }
         .steps-wrap { background: white; border: 1px solid #DDD9CF; border-radius: 12px; padding: 20px 28px; margin-bottom: 20px; overflow-x: auto; }
@@ -224,12 +288,17 @@
 <div class="topbar">
     <div class="topbar-title">
         <button class="hamburger-btn" onclick="openSidebar()" aria-label="Open menu">☰</button>
-        🧪 Lab Calculation Wizard
+        <span class="flask-anim-box">
+            🧪
+            <span class="flask-bubble"></span>
+            <span class="flask-bubble b2"></span>
+            <span class="flask-bubble b3"></span>
+        </span>
+        Lab Calculation Wizard
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div class="edit-mode-badge" id="edit-mode-badge">✏️ EDIT MODE — updating existing sample</div>
         <a href="/samples" class="btn-muted" style="text-decoration:none;">← Back to Samples</a>
-        <a href="/logout" class="btn btn-sm btn-outline-danger fw-bold" style="border-radius:8px;padding:7px 14px;font-size:13px;text-decoration:none;">🚪 Logout</a>
     </div>
 </div>
 
@@ -329,7 +398,8 @@
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label">pH Value</label>
-                        <input type="number" class="form-control" id="ph" placeholder="e.g. 7.2" step="0.01" min="0" max="14">
+                        <input type="number" class="form-control" id="ph" placeholder="e.g. 7.2" step="0.01" min="0" max="14" oninput="updateLiveBadge('ph')">
+                        <div id="badge-ph"></div>
                     </div>
                     <div class="col-12"><div class="sec-divider"><span>⚡ EC Reading</span></div></div>
                     <div class="col-md-4">
@@ -344,6 +414,7 @@
                     <div class="col-md-4">
                         <label class="form-label">Calculated EC <span class="lbl-sub">(mS/cm, auto)</span></label>
                         <input type="text" class="form-control calc-field" id="ec" readonly placeholder="Auto-calculated…">
+                        <div id="badge-ec"></div>
                     </div>
                 </div>
             </div>
@@ -371,6 +442,7 @@
                     <div class="col-md-4">
                         <label class="form-label">Calculated Nitrogen <span class="lbl-sub">(kg/ha, auto)</span></label>
                         <input type="text" class="form-control calc-field" id="nitrogen" readonly placeholder="Auto-calculated…">
+                        <div id="badge-nitrogen"></div>
                     </div>
                 </div>
             </div>
@@ -397,6 +469,7 @@
                     <div class="col-md-6">
                         <label class="form-label">Calculated Phosphorus <span class="lbl-sub">(kg/ha, auto)</span></label>
                         <input type="text" class="form-control calc-field" id="phosphorus" readonly placeholder="Auto-calculated…">
+                        <div id="badge-phosphorus"></div>
                     </div>
                     <div class="col-12"><div class="sec-divider"><span>🔥 Potassium</span></div></div>
                     <div class="col-md-6">
@@ -406,6 +479,7 @@
                     <div class="col-md-6">
                         <label class="form-label">Calculated Potassium <span class="lbl-sub">(kg/ha, auto)</span></label>
                         <input type="text" class="form-control calc-field" id="potassium" readonly placeholder="Auto-calculated…">
+                        <div id="badge-potassium"></div>
                     </div>
                 </div>
             </div>
@@ -428,6 +502,7 @@
                     <div class="col-md-6">
                         <label class="form-label">Calculated OC <span class="lbl-sub">(%)</span></label>
                         <input type="text" class="form-control calc-field" id="organic_carbon" readonly placeholder="Auto-calculated…">
+                        <div id="badge-organic_carbon"></div>
                     </div>
                     <div class="col-12"><div class="sec-divider"><span>🟡 Boron</span></div></div>
                     <div class="col-md-6">
@@ -437,6 +512,7 @@
                     <div class="col-md-6">
                         <label class="form-label">Calculated Boron <span class="lbl-sub">(ppm)</span></label>
                         <input type="text" class="form-control calc-field" id="boron" readonly placeholder="Auto-calculated…">
+                        <div id="badge-boron"></div>
                     </div>
                     <div class="col-12"><div class="sec-divider"><span>🔶 Sulphur</span></div></div>
                     <div class="col-md-6">
@@ -446,6 +522,7 @@
                     <div class="col-md-6">
                         <label class="form-label">Calculated Sulphur <span class="lbl-sub">(ppm)</span></label>
                         <input type="text" class="form-control calc-field" id="sulphur" readonly placeholder="Auto-calculated…">
+                        <div id="badge-sulphur"></div>
                     </div>
                 </div>
             </div>
@@ -462,14 +539,14 @@
                 <div class="row g-3">
                     <div class="col-12"><div class="sec-divider"><span>🔵 Zinc &amp; Iron</span></div></div>
                     <div class="col-md-3"><label class="form-label">Absorbance (Zn)</label><input type="number" class="form-control" id="abs_zinc" placeholder="e.g. 0.052" step="0.0001" oninput="calcAbs('zinc')"></div>
-                    <div class="col-md-3"><label class="form-label">Calculated Zinc <span class="lbl-sub">(ppm)</span></label><input type="text" class="form-control calc-field" id="zinc" readonly placeholder="Auto…"></div>
+                    <div class="col-md-3"><label class="form-label">Calculated Zinc <span class="lbl-sub">(ppm)</span></label><input type="text" class="form-control calc-field" id="zinc" readonly placeholder="Auto…"><div id="badge-zinc"></div></div>
                     <div class="col-md-3"><label class="form-label">Absorbance (Fe)</label><input type="number" class="form-control" id="abs_iron" placeholder="e.g. 0.108" step="0.0001" oninput="calcAbs('iron')"></div>
-                    <div class="col-md-3"><label class="form-label">Calculated Iron <span class="lbl-sub">(ppm)</span></label><input type="text" class="form-control calc-field" id="iron" readonly placeholder="Auto…"></div>
+                    <div class="col-md-3"><label class="form-label">Calculated Iron <span class="lbl-sub">(ppm)</span></label><input type="text" class="form-control calc-field" id="iron" readonly placeholder="Auto…"><div id="badge-iron"></div></div>
                     <div class="col-12"><div class="sec-divider"><span>🟣 Manganese &amp; Copper</span></div></div>
                     <div class="col-md-3"><label class="form-label">Absorbance (Mn)</label><input type="number" class="form-control" id="abs_manganese" placeholder="e.g. 0.067" step="0.0001" oninput="calcAbs('manganese')"></div>
-                    <div class="col-md-3"><label class="form-label">Calculated Manganese <span class="lbl-sub">(ppm)</span></label><input type="text" class="form-control calc-field" id="manganese" readonly placeholder="Auto…"></div>
+                    <div class="col-md-3"><label class="form-label">Calculated Manganese <span class="lbl-sub">(ppm)</span></label><input type="text" class="form-control calc-field" id="manganese" readonly placeholder="Auto…"><div id="badge-manganese"></div></div>
                     <div class="col-md-3"><label class="form-label">Absorbance (Cu)</label><input type="number" class="form-control" id="abs_copper" placeholder="e.g. 0.029" step="0.0001" oninput="calcAbs('copper')"></div>
-                    <div class="col-md-3"><label class="form-label">Calculated Copper <span class="lbl-sub">(ppm)</span></label><input type="text" class="form-control calc-field" id="copper" readonly placeholder="Auto…"></div>
+                    <div class="col-md-3"><label class="form-label">Calculated Copper <span class="lbl-sub">(ppm)</span></label><input type="text" class="form-control calc-field" id="copper" readonly placeholder="Auto…"><div id="badge-copper"></div></div>
                 </div>
             </div>
         </div>
@@ -699,6 +776,7 @@ async function lookupSample() {
             noticeEl.style.display = 'flex';
             document.getElementById('edit-mode-badge').style.display = 'block';
             isUpdate = true;
+            setTimeout(updateAllLiveBadges, 100);
         } else {
             statusEl.className = 'lookup-status lookup-err';
             statusEl.textContent = '❌ Sample ID not found — a new sample will be created.';
@@ -712,6 +790,35 @@ async function lookupSample() {
     }
 }
 
+function updateLiveBadge(param) {
+    const valElem = document.getElementById(param);
+    const badgeElem = document.getElementById('badge-' + param);
+    if (!valElem || !badgeElem) return;
+    
+    const val = valElem.value;
+    const rating = getJSParamRating(param, val);
+    
+    if (!rating) {
+        badgeElem.style.display = 'none';
+        return;
+    }
+    
+    badgeElem.style.display = 'inline-block';
+    badgeElem.style.color = rating.color;
+    badgeElem.style.backgroundColor = rating.bg;
+    badgeElem.style.border = '1.5px solid ' + rating.border;
+    badgeElem.style.padding = '4px 10px';
+    badgeElem.style.borderRadius = '6px';
+    badgeElem.style.fontSize = '11.5px';
+    badgeElem.style.fontWeight = '700';
+    badgeElem.style.marginTop = '6px';
+    badgeElem.innerHTML = `<span>Rating: ${rating.label}</span>`;
+}
+
+function updateAllLiveBadges() {
+    ['ph', 'ec', 'nitrogen', 'phosphorus', 'potassium', 'organic_carbon', 'boron', 'sulphur', 'zinc', 'iron', 'manganese', 'copper'].forEach(updateLiveBadge);
+}
+
 function calcEC() {
     const obs  = parseFloat(document.getElementById('observed_ec').value);
     const temp = parseFloat(document.getElementById('ec_temperature').value);
@@ -719,19 +826,26 @@ function calcEC() {
         const cf = getCompFactor(temp);
         document.getElementById('ec').value = (obs * cf).toFixed(4);
         document.getElementById('comp-factor-display').textContent = `Compensation factor: ${cf} (at ${temp}°C)`;
+        updateLiveBadge('ec');
     }
 }
 function calcNitrogen() {
     const a = parseFloat(document.getElementById('n_burette_a').value);
     const b = parseFloat(document.getElementById('n_burette_b').value);
-    if (!isNaN(a) && !isNaN(b)) document.getElementById('nitrogen').value = ((a - b) * 209.07).toFixed(2);
+    if (!isNaN(a) && !isNaN(b)) {
+        document.getElementById('nitrogen').value = ((a - b) * 209.07).toFixed(2);
+        updateLiveBadge('nitrogen');
+    }
 }
 function calcAbs(param) {
     const idMap = { organic_carbon:'abs_organic_carbon', potassium:'abs_potassium', phosphorus:'abs_phosphorus' };
     const absId = idMap[param] || `abs_${param}`;
     const val = parseFloat(document.getElementById(absId).value);
     const f   = factors[param] || 1;
-    if (!isNaN(val)) document.getElementById(param).value = (val * f).toFixed(4);
+    if (!isNaN(val)) {
+        document.getElementById(param).value = (val * f).toFixed(4);
+        updateLiveBadge(param);
+    }
 }
 
 function getCategory(ph, n, p, k) {
