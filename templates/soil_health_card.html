@@ -212,6 +212,11 @@
             margin-left: 4px;
             transition: all 0.2s ease;
         }
+        .rating-dot.rating-dot-lower { background: #DCFCE7; border: 1.5px solid #16803C; }
+        .rating-dot.rating-dot-low { background: #FEF3C7; border: 1.5px solid #A5730A; }
+        .rating-dot.rating-dot-moderate { background: #FFEDD5; border: 1.5px solid #B4530A; }
+        .rating-dot.rating-dot-high { background: #FEE2E2; border: 1.5px solid #9B1C1C; }
+        .rating-dot.rating-dot-higher { background: #F3E8FF; border: 1.5px solid #5B1A8C; }
         .rating-dot-inner {
             width: 16px;
             height: 16px;
@@ -558,7 +563,7 @@
                         <div class="param-range">RANGE : {{ r.range if r else '—' }}</div>
                     </div>
                     {% if r %}
-                    <div class="rating-dot" style="{{ r.style }}" title="{{ r.label }}">
+                    <div class="rating-dot rating-dot-{{ r.level }}" title="{{ r.label }}">
                         <div style="width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center;">
                             {{ r.svg|safe }}
                         </div>
