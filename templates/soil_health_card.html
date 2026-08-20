@@ -558,7 +558,7 @@
                         <div class="param-range">RANGE : {{ r.range if r else '—' }}</div>
                     </div>
                     {% if r %}
-                    <div class="rating-dot" style="background: {{ r.bg }}; border: 1.5px solid {{ r.border }};" title="{{ r.label }}">
+                    <div class="rating-dot" style="{{ 'background: ' ~ r.bg ~ '; border: 1.5px solid ' ~ r.border ~ ';' }}" title="{{ r.label }}">
                         <div style="width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center;">
                             {{ r.svg|safe }}
                         </div>
