@@ -273,7 +273,7 @@
         }
     </style>
 </head>
-<body>
+<body data-show-admin="{{ 'true' if show_admin else 'false' }}">
 
 <!-- Floating Leaf Animation -->
 <div class="leaf-particles">
@@ -552,13 +552,11 @@ function selectRole(role) {
     document.querySelectorAll('.role-note').forEach(n => n.classList.remove('show'));
     const note = document.getElementById(`note-${role}`);
     if (note) note.classList.add('show');
-}
-const shouldAutoSelectAdmin = {{ 'true' if show_admin else 'false' }};
-if (shouldAutoSelectAdmin) {
-    document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function() {
+    if (document.body.dataset.showAdmin === 'true') {
         selectRole('admin');
-    });
-}
+    }
+});
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
