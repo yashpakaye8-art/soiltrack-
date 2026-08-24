@@ -552,6 +552,8 @@ function selectRole(role) {
     document.querySelectorAll('.role-note').forEach(n => n.classList.remove('show'));
     const note = document.getElementById(`note-${role}`);
     if (note) note.classList.add('show');
+}
+
 document.addEventListener("DOMContentLoaded", function() {
     if (document.body.dataset.showAdmin === 'true') {
         selectRole('admin');
