@@ -1354,18 +1354,11 @@ def update_sample(id):
     if hasattr(sample, 'taluka'):
         sample.taluka = taluka_input
 
-    # Dynamic Region / Taluka Code & Sample ID Prefix Update
-    t_code = detect_taluka_code(taluka_input, address_input, sample.village)
-    v_code = sample.village[:3].upper() if (sample.village and len(sample.village) >= 3) else (sample.village.upper().ljust(3, 'X') if sample.village else 'SMP')
-    
-    curr_id = sample.sample_id or ''
-    seq_match = re.search(r'\d+$', curr_id)
-    seq_num = seq_match.group(0) if seq_match else '01'
-
-    if t_code:
-        sample.sample_id = f"{t_code}-{v_code}{seq_num}"
-    else:
-        sample.sample_id = f"{v_code}{seq_num}"
+    # Preserve existing sample_id to prevent database key collisions and maintain permanent tracking
+    if not sample.sample_id:
+        t_code = detect_taluka_code(taluka_input, address_input, sample.village)
+        v_code = sample.village[:3].upper() if (sample.village and len(sample.village) >= 3) else 'SMP'
+        sample.sample_id = f"{t_code}-{v_code}01" if t_code else f"{v_code}01"
 
     sample.sample_type     = request.form.get('sample_type')
     sample.farmer_name     = request.form.get('farmer_name')
