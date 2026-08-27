@@ -692,23 +692,49 @@ def dashboard():
         pvt_count=pvt_count,
         recent=recent)
 
+# ── Helper: Parse Academic Year ──
+def parse_academic_year(val):
+    if not val:
+        return None
+    val = str(val).strip()
+    if '-' in val and len(val) == 9 and val[:4].isdigit() and val[5:].isdigit():
+        return val
+    parts = val.split('-')
+    if len(parts) >= 1 and parts[0].isdigit() and len(parts[0]) == 4:
+        yr = int(parts[0])
+        mo = int(parts[1]) if (len(parts) >= 2 and parts[1].isdigit()) else 6
+        if mo >= 4:
+            return f"{yr}-{yr+1}"
+        else:
+            return f"{yr-1}-{yr}"
+    if val.isdigit() and len(val) == 4:
+        yr = int(val)
+        return f"{yr}-{yr+1}"
+    return val
+
 # ── Yearly Records & Annual Report Archive ──
 @app.route('/yearly-records')
 @login_required
 def yearly_records():
     selected_year = request.args.get('year', '')
     
-    # Extract all distinct collection years from database
-    raw_dates = [s.collection_date for s in Sample.query.all() if s.collection_date]
-    years = sorted(list(set(raw_dates)), reverse=True)
+    all_samples = Sample.query.all()
+    
+    # Extract clean, distinct Academic Years (e.g. 2026-2027, 2025-2026)
+    ac_years_set = set()
+    for s in all_samples:
+        ay = parse_academic_year(s.collection_date)
+        if ay:
+            ac_years_set.add(ay)
+            
+    years = sorted(list(ac_years_set), reverse=True)
     if not years:
         years = ['2025-2026']
 
-    query = Sample.query
     if selected_year:
-        query = query.filter(Sample.collection_date == selected_year)
-        
-    samples = query.all()
+        samples = [s for s in all_samples if parse_academic_year(s.collection_date) == selected_year]
+    else:
+        samples = all_samples
     
     # Annual statistics calculation
     total_count = len(samples)
