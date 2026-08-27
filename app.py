@@ -167,7 +167,7 @@ class TestResult(db.Model):
     category = db.Column(db.String(30))    # e.g. 'High' / 'Medium' / 'Low' / 'Sufficient' / 'Deficient' / 'Optimal'
     unit = db.Column(db.String(30))
 
-    sample = db.relationship('Sample', backref=db.backref('test_results', lazy=True))
+    sample = db.relationship('Sample', backref=db.backref('test_results', cascade='all, delete-orphan', lazy=True))
 
 class LabCalculation(db.Model):
     """One row per sample — the overall fertility summary."""
@@ -178,7 +178,7 @@ class LabCalculation(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    sample = db.relationship('Sample', backref=db.backref('lab_calculation', uselist=False, lazy=True))
+    sample = db.relationship('Sample', backref=db.backref('lab_calculation', uselist=False, cascade='all, delete-orphan', lazy=True))
 
 class LabCalculationTestResult(db.Model):
     """Many-to-many link between a LabCalculation and the TestResult rows that fed it."""
@@ -1382,11 +1382,28 @@ def update_sample(id):
     db.session.commit()
     return redirect(url_for('sample_detail', id=sample.id))
 
+def _delete_sample_child_records(sample_ids):
+    if not sample_ids:
+        return
+    lab_calc_ids = [lc.id for lc in LabCalculation.query.filter(LabCalculation.sample_id.in_(sample_ids)).all()]
+    test_res_ids = [tr.id for tr in TestResult.query.filter(TestResult.sample_id.in_(sample_ids)).all()]
+    
+    if lab_calc_ids:
+        LabCalculationTestResult.query.filter(LabCalculationTestResult.lab_calculation_id.in_(lab_calc_ids)).delete(synchronize_session=False)
+    if test_res_ids:
+        LabCalculationTestResult.query.filter(LabCalculationTestResult.result_id.in_(test_res_ids)).delete(synchronize_session=False)
+        
+    if lab_calc_ids:
+        LabCalculation.query.filter(LabCalculation.id.in_(lab_calc_ids)).delete(synchronize_session=False)
+    if test_res_ids:
+        TestResult.query.filter(TestResult.id.in_(test_res_ids)).delete(synchronize_session=False)
+
 @app.route('/delete/<int:id>')
 @staff_or_admin_required
 def delete_sample(id):
     sample = db.session.get(Sample, id)
     if sample:
+        _delete_sample_child_records([id])
         db.session.delete(sample)
         db.session.commit()
     return redirect(url_for('all_samples'))
@@ -1397,12 +1414,15 @@ def bulk_delete_samples():
     sample_ids = request.form.getlist('sample_ids')
     if sample_ids:
         if 'all' in sample_ids:
+            all_ids = [s.id for s in Sample.query.all()]
+            _delete_sample_child_records(all_ids)
             num = Sample.query.delete()
             db.session.commit()
             flash(f'✅ All {num} samples have been deleted from the database.', 'success')
         else:
             ids = [int(i) for i in sample_ids if i.isdigit()]
             if ids:
+                _delete_sample_child_records(ids)
                 num = Sample.query.filter(Sample.id.in_(ids)).delete(synchronize_session=False)
                 db.session.commit()
                 flash(f'✅ Successfully deleted {num} selected samples.', 'success')
